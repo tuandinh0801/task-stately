@@ -1,0 +1,67 @@
+{
+  "name": "task-stately",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "bin": {
+    "task-stately": "./dist/index.mjs"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "start:cli": "node dist/cli/index.js",
+    "start:mcp": "node dist/mcp/server.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
+    "validate:types": "pnpm typecheck",
+    "validate": "pnpm validate:types && pnpm lint && pnpm test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.15.3",
+    "@types/react": "^18.3.20",
+    "@types/uuid": "^10.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.31.1",
+    "@typescript-eslint/parser": "^8.31.1",
+    "eslint": "^9.25.1",
+    "eslint-config-prettier": "^10.1.2",
+    "eslint-plugin-prettier": "^5.2.6",
+    "ink-testing-library": "^4.0.0",
+    "jsdom": "^26.1.0",
+    "memfs": "^4.17.0",
+    "prettier": "^3.5.3",
+    "tsconfig-paths": "^4.2.0",
+    "tsup": "^8.4.0",
+    "typescript": "^5.8.3",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.1.2",
+    "zod": "^3.24.3"
+  },
+  "dependencies": {
+    "@inkjs/ui": "^2.0.0",
+    "@modelcontextprotocol/sdk": "^1.10.2",
+    "@types/lodash": "^4.17.16",
+    "chalk": "^5.4.1",
+    "commander": "^13.1.0",
+    "fastmcp": "^1.23.2",
+    "ink": "^5.2.1",
+    "ink-divider": "^4.1.1",
+    "ink-multi-select": "^2.0.0",
+    "ink-select-input": "^6.2.0",
+    "ink-spinner": "^5.0.0",
+    "lodash": "^4.17.21",
+    "react": "^18.3.1",
+    "uuid": "^11.1.0"
+  }
+}

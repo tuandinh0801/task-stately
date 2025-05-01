@@ -134,3 +134,28 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# Task data (initially)
+tasks.json
+*.tasks.json.bak
+
+# Environment variables (ensure general pattern and example exception)
+.env.*
+!.env.example
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE config
+.vscode/
+.idea/
+
+# Test Artifacts (root specific)
+/coverage/
+
+.repomix
+
+# Roocode
+.roo/
+.roomodes
