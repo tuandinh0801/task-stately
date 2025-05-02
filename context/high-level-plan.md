@@ -152,7 +152,7 @@
 
 *   **Objective:** Expose task management functionality via the Model Control Protocol.
 *   **Steps:**
-    1.  **Install Dependencies:** `npm install fastmcp @modelcontextprotocol/sdk`.
+    1.  **Install Dependencies:** `pnpm install fastmcp`.
     2.  **Setup Entry Point:** Create `src/mcp/server.ts`.
     3.  **Instantiate Core Logic:** Create instances of `JsonFileTaskStorage` and `TaskManager` (similar to CLI).
     4.  **Initialize FastMCP:** Create a `new FastMCP(...)` instance.

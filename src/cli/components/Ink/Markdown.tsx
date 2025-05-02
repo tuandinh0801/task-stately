@@ -1,8 +1,7 @@
 import React, { useEffect } from 'react';
-import { parse, setOptions } from 'marked';
 import { Text } from 'ink';
 import TerminalRenderer, { TerminalRendererOptions } from 'marked-terminal';
-import { marked } from 'marked';
+import { marked, parse } from 'marked';
 
 export type Props = TerminalRendererOptions & {
     children: string;

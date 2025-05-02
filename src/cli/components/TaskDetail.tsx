@@ -4,6 +4,8 @@ import Divider from 'ink-divider';
 import ProgressBar from './Ink/ProgressBar';
 import { Task, Subtask } from '@/types/task';
 import StatusLabel from './StatusLabel';
+import Markdown from './Ink/Markdown';
+import useStdoutDimensions from './hooks/useStdoutDimensions';
 
 interface TaskDetailProps {
   task: Task;
@@ -20,9 +22,10 @@ const calculateProgress = (subtasks: Subtask[]): number => {
 
 const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
   const subtaskProgress = calculateProgress(task.subtasks ?? []);
+  const [width, height] = useStdoutDimensions()
 
   return (
-    <Box flexDirection="column" padding={1} borderStyle="round" borderColor="gray" width={80}>
+    <Box flexDirection="column" padding={1} borderStyle="round" borderColor="green" width={width - 20}>
       {/* Header Section */}
       <Box marginBottom={1} alignItems="center">
         <Text bold>ID: {task.id}</Text>
@@ -65,7 +68,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
           <Box marginBottom={1} flexDirection="column">
             <Text bold>Description:</Text>
             <Box borderStyle="single" paddingX={1}>
-              <Text wrap="wrap">{task.description}</Text>
+              <Markdown>{task.description}</Markdown>
             </Box>
           </Box>
         </>
