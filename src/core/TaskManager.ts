@@ -6,9 +6,7 @@ import {
   NewSubtaskData,
   UpdateSubtaskData,
 } from '@/core/storage/ITaskStorage';
-import { Task, Subtask, TaskStatusSchema, SubtaskSchema } from '@/types/task'; // Added SubtaskSchema
-import { v4 as uuidv4 } from 'uuid'; // Using UUID for subtask IDs for robustness
-
+import { Task, Subtask, TaskStatusSchema, SubtaskSchema } from '@/types/task';
 export class TaskManager {
   private readonly storage: ITaskStorage;
 
@@ -83,8 +81,21 @@ export class TaskManager {
     }
 
     const now = new Date().toISOString();
-    // Using UUID for subtask IDs is more robust than index-based IDs
-    const newSubtaskId = uuidv4();
+
+    // Calculate the next sequence number for the subtask ID
+    const existingSubtasks = parentTask.subtasks || [];
+    let maxSequence = 0;
+    existingSubtasks.forEach(sub => {
+      const parts = sub.id.split('.');
+      if (parts.length === 2 && parts[0] === taskId) {
+        const sequence = parseInt(parts[1], 10);
+        if (!isNaN(sequence) && sequence > maxSequence) {
+          maxSequence = sequence;
+        }
+      }
+    });
+    const nextSequence = maxSequence + 1;
+    const newSubtaskId = `${taskId}.${nextSequence}`;
 
     const newSubtask: Subtask = {
       ...subtaskData,

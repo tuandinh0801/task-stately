@@ -1,8 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Command } from 'commander';
 import { TaskManager } from '../../core/TaskManager'; // Assuming TaskNotFoundError might be used
-import { registerDeleteCommand } from './delete'; // Assuming named export
-import { TaskNotFoundError } from '../../types/task';
 import { deleteTaskLogic } from './delete'; // Import the logic function
 
 // Mock TaskManager

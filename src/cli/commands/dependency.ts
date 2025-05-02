@@ -4,7 +4,7 @@ import React from 'react';
 import { TaskManager } from '../../core/TaskManager'; // Corrected path
 import SuccessMessage from '../components/SuccessMessage'; // Corrected path
 import ErrorDisplay from '../components/ErrorDisplay'; // Corrected path
-import { TaskNotFoundError } from '../../types/task'; // Import error type
+import { TaskNotFoundError } from '@/types/task'; // Import error type
 
 // --- Extracted Logic Functions ---
 

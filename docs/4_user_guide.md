@@ -64,3 +64,77 @@ Press `Y` (or Enter) to confirm, or `N` to cancel.
 ---
 
 *For component details, see [6_components_reference.md](6_components_reference.md).*
+---
+
+## Adding Tasks (`add`)
+
+The `add` command creates a new task. You can specify task details using flags or enter interactive mode for guided input.
+
+### Options
+
+| Option        | Alias | Description                                      | Required |
+|---------------|-------|--------------------------------------------------|----------|
+| `--title`     | `-t`  | The title of the task                            | Yes*     |
+| `--description`| `-d`  | A detailed description of the task               | No       |
+| `--priority`  | `-p`  | Task priority (`low`, `medium`, `high`)          | No       |
+| `--status`    | `-s`  | Task status (`todo`, `in-progress`, `done`)      | No       |
+| `--interactive`| `-i`  | Enter interactive mode to be prompted for details | No       |
+
+*\*Note: If `--title` is omitted and `--interactive` is not used, interactive mode will be triggered automatically.*
+
+### Usage Examples
+
+```bash
+# Add task using flags
+task-stately add --title "Setup project" --priority high
+
+# Add task interactively (prompts for all details)
+task-stately add --interactive
+
+# Add task (will trigger interactive mode as --title is missing)
+task-stately add --priority medium
+```
+
+### Interactive Mode
+
+If you use the `--interactive` flag or omit required options (like `--title`), the CLI will guide you through creating the task using prompts powered by `inquirer`.
+
+---
+
+## Updating Tasks (`update`)
+
+The `update` command modifies an existing task identified by its ID. You can specify which fields to update using flags or enter interactive mode.
+
+### Arguments
+
+- `<task-id>`: The ID of the task to update (Required).
+
+### Options
+
+| Option        | Alias | Description                                      |
+|---------------|-------|--------------------------------------------------|
+| `--title`     | `-t`  | Update the title of the task                     |
+| `--description`| `-d`  | Update the description of the task               |
+| `--priority`  | `-p`  | Update task priority (`low`, `medium`, `high`)   |
+| `--status`    | `-s`  | Update task status (`todo`, `in-progress`, `done`)|
+| `--dueDate`   |       | Update the due date (YYYY-MM-DD format)          |
+| `--interactive`| `-i`  | Enter interactive mode to select fields to update |
+
+*Note: If no update options are provided and `--interactive` is not used, interactive mode will be triggered automatically.*
+
+### Usage Examples
+
+```bash
+# Update task status and priority using flags
+task-stately update 123 --status in-progress --priority high
+
+# Update task interactively (prompts which fields to update)
+task-stately update 123 --interactive
+
+# Update task (will trigger interactive mode as no update flags are given)
+task-stately update 123
+```
+
+### Interactive Mode
+
+If you use the `--interactive` flag or provide only the `<task-id>` without any update options, the CLI will prompt you to select which fields you want to update and then ask for the new values using `inquirer`.

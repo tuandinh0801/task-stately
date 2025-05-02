@@ -1,9 +1,7 @@
 import { Command } from 'commander';
-import { render } from 'ink';
-import React from 'react';
+import inquirer from 'inquirer'; // Added inquirer
 import { TaskManager } from '../../core/TaskManager';
-import SuccessMessage from '../components/SuccessMessage';
-import ErrorDisplay from '../components/ErrorDisplay';
+// Removed Ink components: SuccessMessage, ErrorDisplay, render, React
 import {
   Task,
   TaskPriority,
@@ -12,7 +10,7 @@ import {
   TaskPrioritySchema,
   TaskTypeSchema,
   TaskStatusSchema,
-} from '../../types/task';
+} from '@/types/task';
 import { z } from 'zod';
 
 // Options received from Commander before validation/parsing
@@ -25,9 +23,11 @@ export interface AddTaskOptions {
   tags?: string;     // Comma-separated string from CLI
   criteria?: string; // Comma-separated string from CLI (or handle array if commander does)
   assignee?: string;
+  interactive?: boolean; // Added for the new flag
 }
 
 // Data structure passed to TaskManager.createTask
+// This remains the same as addTaskLogic expects this structure
 interface CreateTaskData {
   title: string;
   description?: string;
@@ -42,6 +42,7 @@ interface CreateTaskData {
 
 /**
  * Pure logic for creating a new task. Handles validation and data transformation.
+ * This function remains largely the same, as it contains the core business logic.
  * @param taskManager The TaskManager instance.
  * @param options Raw options from the CLI command.
  * @returns Promise resolving to the newly created Task.
@@ -101,39 +102,121 @@ export function registerAddCommand(
   program
     .command('add')
     .description('Add a new task')
-    .requiredOption('-t, --title <title>', 'Title of the task')
+    .option('-i, --interactive', 'Add task interactively', true) // Added interactive flag
+    // Title is now optional here, required only if not interactive
+    .option('-t, --title <title>', 'Title of the task')
     .option('-d, --description <description>', 'Description of the task')
     .option(
       '-p, --priority <priority>',
       `Priority (choices: ${Object.values(TaskPrioritySchema.enum).join(', ')})`,
-      // Default handled in addTaskLogic
     )
     .option(
       '--type <type>',
       `Type (choices: ${Object.values(TaskTypeSchema.enum).join(', ')})`,
-      // Default handled in addTaskLogic
     )
     .option(
       '-s, --status <status>',
       `Status (choices: ${Object.values(TaskStatusSchema.enum).join(', ')})`,
-       // Default handled in addTaskLogic
     )
-    // Test expects comma-separated, adjust if commander handles arrays differently
     .option('--tags <tags>', 'Comma-separated tags for the task')
     .option('--criteria <criteria>', 'Comma-separated acceptance criteria')
     .option('--assignee <assignee>', 'Assignee for the task')
-    .action(async (options: AddTaskOptions) => { // Use AddTaskOptions type
-      let element: React.ReactElement;
+    .action(async (options: AddTaskOptions) => {
       try {
-        const newTask = await addTaskLogic(taskManager, options);
-        element = React.createElement(SuccessMessage, {
-          message: `Task "${newTask.title}" (ID: ${newTask.id}) created successfully.`,
-        });
+        let taskData: AddTaskOptions;
+
+        if (options.interactive) {
+          // --- Interactive Mode ---
+          const answers = await inquirer.prompt([
+            {
+              type: 'input',
+              name: 'title',
+              message: 'Task Title:',
+              validate: (input: string) => input.trim() !== '' || 'Title cannot be empty.',
+            },
+            {
+              type: 'editor', // Or 'input'
+              name: 'description',
+              message: 'Description (press Enter to launch editor, ESC to skip):',
+            },
+            {
+              type: 'list',
+              name: 'priority',
+              message: 'Priority:',
+              choices: Object.values(TaskPrioritySchema.enum),
+              default: TaskPrioritySchema.enum.medium,
+            },
+            {
+              type: 'list',
+              name: 'type',
+              message: 'Type:',
+              choices: Object.values(TaskTypeSchema.enum),
+              default: TaskTypeSchema.enum.feature,
+            },
+            {
+              type: 'list',
+              name: 'status',
+              message: 'Status:',
+              choices: Object.values(TaskStatusSchema.enum),
+              default: TaskStatusSchema.enum.pending,
+            },
+            {
+              type: 'input',
+              name: 'tags',
+              message: 'Tags (comma-separated):',
+            },
+            {
+              type: 'input', // Using input for simplicity, could be editor
+              name: 'criteria',
+              message: 'Acceptance Criteria (comma-separated):',
+            },
+            {
+              type: 'input',
+              name: 'assignee',
+              message: 'Assignee (optional):',
+            },
+            {
+              type: 'confirm',
+              name: 'confirm',
+              message: 'Create task with the above details?',
+              default: true,
+            }
+          ]);
+
+          if (!answers.confirm) {
+            console.log('Task creation cancelled.');
+            return;
+          }
+
+          // Prepare data from answers, matching AddTaskOptions structure for addTaskLogic
+          taskData = {
+            title: answers.title,
+            description: answers.description,
+            priority: answers.priority,
+            type: answers.type,
+            status: answers.status,
+            tags: answers.tags, // addTaskLogic handles splitting
+            criteria: answers.criteria, // addTaskLogic handles splitting
+            assignee: answers.assignee,
+          };
+
+        } else {
+          // --- Non-Interactive Mode ---
+          if (!options.title) {
+             throw new Error('Task title is required when not using interactive mode.');
+          }
+          taskData = options; // Use options directly
+        }
+
+        // Call the core logic function (handles validation and creation)
+        const newTask = await addTaskLogic(taskManager, taskData);
+        console.log(`✅ Task "${newTask.title}" (ID: ${newTask.id}) created successfully.`);
+
       } catch (error: unknown) {
-         const errorToDisplay = error instanceof Error ? error : new Error(String(error));
-         element = React.createElement(ErrorDisplay, { error: errorToDisplay });
-         process.exitCode = 1; // Set exit code on error
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error(`❌ Error adding task: ${errorMessage}`);
+        // Consider more specific error handling based on error type (e.g., ZodError)
+        process.exitCode = 1; // Set exit code on error
       }
-      render(element);
     });
 }

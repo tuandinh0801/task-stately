@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { vol, fs } from 'memfs'; // Use vol for volume management, fs for mocked fs operations
+import { vol, fs } from 'memfs'; 
 import path from 'path';
 import { JsonFileTaskStorage } from './JsonFileTaskStorage';
-import { Task, TasksFile, TaskStatusSchema } from '@/types/task';
+import { Task, TasksFile, TaskStatusSchema } from '@/types/task'; 
 import { ITaskStorage, NewTaskData } from './ITaskStorage';
 
 // Mock the actual fs module with memfs
@@ -44,12 +44,14 @@ describe('JsonFileTaskStorage', () => {
       expect(vol.existsSync(TEST_FILE_PATH)).toBe(true);
 
       const fileContent = vol.readFileSync(TEST_FILE_PATH, 'utf-8');
-      const expectedDefault: TasksFile = { meta: { schemaVersion: 1, lastId: '0' }, tasks: [] };
+      // Update expected default to use lastTaskId
+      const expectedDefault: TasksFile = { meta: { schemaVersion: 1, lastTaskId: 0 }, tasks: [] };
       expect(JSON.parse(fileContent as string)).toEqual(expectedDefault);
     });
 
     it('should not throw if directory and file already exist on initialize', async () => {
-      const initialData: TasksFile = { meta: { schemaVersion: 1, lastId: '1' }, tasks: [{ id: '1', title: 'Existing', status: 'pending', priority: 'medium', type: 'feature', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), dependencies: [], subtasks: [], acceptanceCriteria: [], artifacts: [], tags: [] }] };
+      // Update initial data to use lastTaskId
+      const initialData: TasksFile = { meta: { schemaVersion: 1, lastTaskId: 1 }, tasks: [{ id: '1', title: 'Existing', status: 'pending', priority: 'medium', type: 'feature', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), dependencies: [], subtasks: [], acceptanceCriteria: [], artifacts: [], tags: [] }] };
       vol.mkdirSync(TEST_DIR, { recursive: true });
       vol.writeFileSync(TEST_FILE_PATH, JSON.stringify(initialData));
 
@@ -78,7 +80,8 @@ describe('JsonFileTaskStorage', () => {
     it('should load tasks correctly from an existing file', async () => {
       const task1: Task = { id: '1', title: 'Task 1', status: 'pending', priority: 'medium', type: 'feature', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), dependencies: [], subtasks: [], acceptanceCriteria: [], artifacts: [], tags: [] };
       const task2: Task = { id: '2', title: 'Task 2', status: 'done', priority: 'high', type: 'bug', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), dependencies: [], subtasks: [], acceptanceCriteria: [], artifacts: [], tags: [] };
-      const initialData: TasksFile = { meta: { schemaVersion: 1, lastId: '2' }, tasks: [task1, task2] };
+      // Update initial data to use lastTaskId
+      const initialData: TasksFile = { meta: { schemaVersion: 1, lastTaskId: 2 }, tasks: [task1, task2] };
       vol.mkdirSync(TEST_DIR, { recursive: true });
       vol.writeFileSync(TEST_FILE_PATH, JSON.stringify(initialData, null, 2));
 
@@ -116,7 +119,7 @@ describe('JsonFileTaskStorage', () => {
       expect(addedTask.updatedAt).toBe(addedTask.createdAt);
 
       const fileContent = JSON.parse(vol.readFileSync(TEST_FILE_PATH, 'utf-8') as string);
-      expect(fileContent.meta.lastId).toBe('1');
+      expect(fileContent.meta.lastTaskId).toBe(1); // Check lastTaskId (number)
       expect(fileContent.tasks).toHaveLength(1);
       expect(fileContent.tasks[0]).toEqual(addedTask); // Check if saved task matches returned task
     });
@@ -131,23 +134,56 @@ describe('JsonFileTaskStorage', () => {
       expect(addedTask2.status).toBe('in-progress');
 
       const fileContent = JSON.parse(vol.readFileSync(TEST_FILE_PATH, 'utf-8') as string);
-      expect(fileContent.meta.lastId).toBe('2');
+      expect(fileContent.meta.lastTaskId).toBe(2); // Check lastTaskId (number)
       expect(fileContent.tasks).toHaveLength(2);
       expect(fileContent.tasks[1].id).toBe('2');
     });
 
-     it('should handle invalid lastId in metadata when getting next ID', async () => {
-        const initialData: TasksFile = { meta: { schemaVersion: 1, lastId: 'invalid' }, tasks: [] };
+     it('should handle old lastId string in metadata during migration', async () => {
+        // Simulate old file format with lastId as string
+        const initialData = { meta: { schemaVersion: 1, lastId: '5' }, tasks: [] };
         vol.mkdirSync(TEST_DIR, { recursive: true });
         vol.writeFileSync(TEST_FILE_PATH, JSON.stringify(initialData));
 
         const newTaskData: NewTaskData = { title: 'Test Task' };
         const addedTask = await storage.addTask(newTaskData);
 
-        expect(addedTask.id).toBe('1'); // Should reset and start from 1
+        expect(addedTask.id).toBe('6'); // Should be the next ID after the migrated '5'
 
         const fileContent = JSON.parse(vol.readFileSync(TEST_FILE_PATH, 'utf-8') as string);
-        expect(fileContent.meta.lastId).toBe('1'); // Metadata should be corrected
+        expect(fileContent.meta.lastTaskId).toBe(6); // Metadata should be corrected and incremented
+        expect(fileContent.tasks[0].id).toBe('6'); // ID should be next after migrated value
+    });
+
+    it('should handle invalid lastId string in metadata during migration (default to 0)', async () => {
+        // Simulate old file format with an invalid lastId string
+        const initialData = { meta: { schemaVersion: 1, lastId: 'abc' }, tasks: [] };
+        vol.mkdirSync(TEST_DIR, { recursive: true });
+        vol.writeFileSync(TEST_FILE_PATH, JSON.stringify(initialData));
+
+        const newTaskData: NewTaskData = { title: 'Test Task After Invalid lastId' };
+        const addedTask = await storage.addTask(newTaskData);
+
+        expect(addedTask.id).toBe('1'); // Should default to 1 as lastTaskId becomes 0
+
+        const fileContent = JSON.parse(vol.readFileSync(TEST_FILE_PATH, 'utf-8') as string);
+        expect(fileContent.meta.lastTaskId).toBe(1); // Metadata should be corrected to 0, then incremented
+        expect(fileContent.tasks[0].id).toBe('1');
+    });
+
+     it('should handle missing or invalid lastTaskId in metadata (default to 0)', async () => {
+        // Simulate file with missing or invalid lastTaskId
+        const initialData = { meta: { schemaVersion: 1, lastTaskId: null }, tasks: [] }; // Use null or undefined or non-number
+        vol.mkdirSync(TEST_DIR, { recursive: true });
+        vol.writeFileSync(TEST_FILE_PATH, JSON.stringify(initialData));
+
+        const newTaskData: NewTaskData = { title: 'Test Task After Invalid lastTaskId' };
+        const addedTask = await storage.addTask(newTaskData);
+
+        expect(addedTask.id).toBe('1'); // Should default to 1 as lastTaskId becomes 0
+
+        const fileContent = JSON.parse(vol.readFileSync(TEST_FILE_PATH, 'utf-8') as string);
+        expect(fileContent.meta.lastTaskId).toBe(1); // Metadata should be corrected to 0, then incremented
         expect(fileContent.tasks[0].id).toBe('1');
     });
   });
@@ -264,8 +300,8 @@ describe('JsonFileTaskStorage', () => {
 
         const fileContent = JSON.parse(vol.readFileSync(TEST_FILE_PATH, 'utf-8') as string);
         expect(fileContent.tasks).toEqual(newTasks);
-        // Metadata should ideally remain unchanged unless saveTasks is designed to update it
-        expect(fileContent.meta.lastId).toBe('2'); // Assuming saveTasks doesn't touch lastId
+        // Metadata should remain unchanged by saveTasks itself (it reads then writes)
+        expect(fileContent.meta.lastTaskId).toBe(2); // Check lastTaskId (number)
     });
   });
 

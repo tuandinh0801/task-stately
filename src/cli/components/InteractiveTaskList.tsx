@@ -1,21 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Box, Text, useInput, useApp } from 'ink';
 import Spinner from 'ink-spinner';
-import SelectInput from 'ink-select-input'; // Remove Item import
-import { Task } from '../../types/task';
-import { TaskManager } from '../../core/TaskManager'; // Correct: Use named import
-import TaskDetail from './TaskDetail'; // To show details on selection
-import StatusLabel from './StatusLabel'; // For display within SelectInput item
+import Table from './Ink/Table';
+import { Task, TaskStatusSchema } from '@/types/task';
+import { TaskManager } from '../../core/TaskManager';
+import TaskDetail from './TaskDetail';
+import StatusLabel from './StatusLabel';
 
 interface InteractiveTaskListProps {
-  taskManager: TaskManager; // Pass instance to fetch tasks
-}
-
-// Define the structure for SelectInput items
-interface TaskSelectItem {
-  label: string; // Display text in the list
-  value: string; // Task ID
-  task: Task; // Full task object for details view
+  taskManager: TaskManager;
 }
 
 const InteractiveTaskList: React.FC<InteractiveTaskListProps> = ({ taskManager }) => {
@@ -23,6 +16,7 @@ const InteractiveTaskList: React.FC<InteractiveTaskListProps> = ({ taskManager }
   const [tasks, setTasks] = useState<Task[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [selectedRowIndex, setSelectedRowIndex] = useState(0);
   const { exit } = useApp();
 
   // Fetch tasks on mount
@@ -42,34 +36,56 @@ const InteractiveTaskList: React.FC<InteractiveTaskListProps> = ({ taskManager }
     fetchTasks();
   }, [taskManager]);
 
-  // Handle user input
-  useInput((input, key) => {
-    if (key.escape || input === 'q') {
-      if (selectedTask) {
-        setSelectedTask(null); // Go back to list view from detail view
-      } else {
-        exit(); // Exit app from list view
-      }
-    }
-    // Add more keybindings later (e.g., 'a' for add, '/' for filter)
+  // Format tasks for Table component
+  const tableData = tasks.map((task) => {
+    // Validate status
+    const statusValue = TaskStatusSchema.safeParse(task.status);
+    const statusText = statusValue.success
+      ? statusValue.data
+      : 'Invalid';
+
+    return {
+      ID: task.id,
+      Title: task.title,
+      Status: statusText,
+      Priority: task.priority ?? 'N/A',
+      Type: task.type ?? 'N/A',
+      '#Deps': task.dependencies?.length ?? 0,
+      '#Subtasks': task.subtasks?.length ?? 0,
+    };
   });
 
-  // Handle task selection - Add explicit inline type for the item parameter
-  const handleSelect = (item: { label: string; value: string }) => {
-    // Find the full task object using the selected item's value (task ID)
-    const selected = tasks.find(task => task.id === item.value);
-    if (selected) {
-      setSelectedTask(selected);
+  // Handle keyboard navigation
+  const handleInput = useCallback((input: string, key: any) => {
+    if (selectedTask) {
+      // In detail view
+      if (key.escape || input === 'q') {
+        setSelectedTask(null); // Go back to list view
+      }
+    } else {
+      // In list view
+      if (key.escape || input === 'q') {
+        exit(); // Exit app
+      } else if (input === 'k' || key.upArrow) {
+        // Move selection up
+        setSelectedRowIndex((prev) => (prev > 0 ? prev - 1 : prev));
+      } else if (input === 'j' || key.downArrow) {
+        // Move selection down
+        setSelectedRowIndex((prev) => (prev < tasks.length - 1 ? prev + 1 : prev));
+      } else if (key.return) {
+        // Select the current task
+        const selected = tasks[selectedRowIndex];
+        if (selected) {
+          setSelectedTask(selected);
+        }
+      }
     }
-    // Optionally handle case where task is not found, though it shouldn't happen here
-  };
+  }, [selectedTask, tasks, selectedRowIndex, exit]);
 
-  // Format tasks for SelectInput
-  const selectItems: TaskSelectItem[] = tasks.map((task) => ({
-    label: `${task.id}: ${task.title} - `, // Basic label, StatusLabel added below
-    value: task.id,
-    task: task,
-  }));
+  // Register keyboard input handler
+  useInput(handleInput, { isActive: true });
+
+  // No longer need separate Cell/SelectedCell components
 
   if (loading) {
     return (
@@ -93,24 +109,34 @@ const InteractiveTaskList: React.FC<InteractiveTaskListProps> = ({ taskManager }
     );
   }
 
+  // Create a modified tableData with highlighting for the selected row
+  const enhancedTableData = tableData.map((row) => {
+    // No need to modify the data, we'll handle highlighting in the cell renderer
+    return row
+  })
+
   return (
     <Box flexDirection="column">
       <Text bold>Interactive Task List (Press 'q' to quit)</Text>
+      <Text dimColor>Use arrow keys (or j/k) to navigate, Enter to select a task</Text>
       {tasks.length === 0 ? (
         <Text>No tasks found.</Text>
       ) : (
-        <SelectInput
-          items={selectItems}
-          onSelect={handleSelect}
-          // Custom component to render each item, including StatusLabel
-          itemComponent={({ label, isSelected }) => (
-            <Box>
-              <Text color={isSelected ? 'blue' : undefined}>{label}</Text>
-              {/* Find the task corresponding to the label to get status */}
-              <StatusLabel status={tasks.find(t => t.id === label.split(':')[0])?.status ?? 'pending'} />
-            </Box>
-          )}
-        />
+        <Box paddingX={1}>
+          <Table
+            key={`table-${selectedRowIndex}`} // Force re-render on index change
+            data={enhancedTableData}
+            // selectedRowIndexProp removed
+            cell={({ row, children }) => { // Use the 'row' prop passed by Table
+              const isSelected = row === selectedRowIndex;
+              return (
+                <Text key={enhancedTableData[row as number].ID} color={isSelected ? 'blue' : undefined} bold={isSelected}>
+                  {children}
+                </Text>
+              );
+            }}
+          />
+        </Box>
       )}
     </Box>
   );

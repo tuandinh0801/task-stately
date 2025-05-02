@@ -4,7 +4,7 @@ import React from 'react';
 import { TaskManager } from '../../core/TaskManager';
 import TaskList from '../components/TaskList';
 import ErrorDisplay from '../components/ErrorDisplay';
-import { Task, TaskStatus, TaskStatusSchema } from '../../types/task'; // Import Task type and status schema
+import { Task, TaskStatus, TaskStatusSchema } from '@/types/task'; // Import Task type and status schema
 import InteractiveTaskList from '../components/InteractiveTaskList';
 
 // Define valid sort fields
@@ -66,7 +66,7 @@ export async function getListTasksLogic(
  */
 export async function listAction(
     taskManager: TaskManager,
-    options: ListOptions
+    options?: ListOptions
 ): Promise<React.ReactElement> {
   try {
     // Pass options to the logic function

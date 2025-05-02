@@ -4,7 +4,7 @@ import React from 'react';
 import { TaskManager } from '../../core/TaskManager';
 import TaskDetail from '../components/TaskDetail';
 import ErrorDisplay from '../components/ErrorDisplay';
-import { Task, TaskNotFoundError } from '../../types/task'; // Import TaskNotFoundError
+import { Task, TaskNotFoundError } from '@/types/task'; // Import TaskNotFoundError
 
 /**
  * Pure logic for fetching a single task by ID.

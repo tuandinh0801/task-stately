@@ -12,7 +12,7 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "start:cli": "node dist/cli/index.js",
+    "start:cli": "node dist/index.mjs",
     "start:mcp": "node dist/mcp/server.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --ext .ts,.tsx",
@@ -29,6 +29,8 @@
   "license": "ISC",
   "devDependencies": {
     "@types/jest": "^29.5.14",
+    "@types/lodash": "^4.17.16",
+    "@types/marked-terminal": "^6.1.1",
     "@types/node": "^22.15.3",
     "@types/react": "^18.3.20",
     "@types/uuid": "^10.0.0",
@@ -41,6 +43,7 @@
     "jsdom": "^26.1.0",
     "memfs": "^4.17.0",
     "prettier": "^3.5.3",
+    "tsc-alias": "^1.8.15",
     "tsconfig-paths": "^4.2.0",
     "tsup": "^8.4.0",
     "typescript": "^5.8.3",
@@ -49,18 +52,21 @@
     "zod": "^3.24.3"
   },
   "dependencies": {
-    "@inkjs/ui": "^2.0.0",
     "@modelcontextprotocol/sdk": "^1.10.2",
-    "@types/lodash": "^4.17.16",
+    "@types/inquirer": "^9.0.7",
     "chalk": "^5.4.1",
     "commander": "^13.1.0",
     "fastmcp": "^1.23.2",
+    "figures": "^6.1.0",
     "ink": "^5.2.1",
     "ink-divider": "^4.1.1",
     "ink-multi-select": "^2.0.0",
     "ink-select-input": "^6.2.0",
     "ink-spinner": "^5.0.0",
+    "inquirer": "^12.6.0",
     "lodash": "^4.17.21",
+    "marked": "^15.0.11",
+    "marked-terminal": "^7.3.0",
     "react": "^18.3.1",
     "uuid": "^11.1.0"
   }

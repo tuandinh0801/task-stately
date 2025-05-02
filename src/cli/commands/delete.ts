@@ -4,7 +4,7 @@ import React from 'react';
 import { TaskManager } from '../../core/TaskManager';
 import SuccessMessage from '../components/SuccessMessage';
 import ErrorDisplay from '../components/ErrorDisplay';
-import { TaskNotFoundError } from '../../types/task';
+import { TaskNotFoundError } from '@/types/task';
 import DeleteConfirmation from '../components/DeleteConfirmation'; // Add standard import
 
 /**

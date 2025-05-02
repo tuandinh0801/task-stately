@@ -65,12 +65,31 @@ export class JsonFileTaskStorage implements ITaskStorage {
       const fileContent = await fs.readFile(this.tasksFilePath, 'utf-8');
       const jsonData = JSON.parse(fileContent);
 
-      // Validate the structure
+      // --- Data Migration & Validation ---
+      // Handle potential old 'lastId' string for backward compatibility
+      let lastTaskId = 0;
+      if (jsonData.meta && typeof jsonData.meta.lastId === 'string') {
+        const parsedOldId = parseInt(jsonData.meta.lastId, 10);
+        if (!isNaN(parsedOldId)) {
+          lastTaskId = parsedOldId;
+        }
+        delete jsonData.meta.lastId; // Remove old field
+        jsonData.meta.lastTaskId = lastTaskId; // Add new field
+        console.log(`Migrated lastId: "${jsonData.meta.lastId}" to lastTaskId: ${lastTaskId}`);
+      } else if (jsonData.meta && typeof jsonData.meta.lastTaskId === 'number') {
+        lastTaskId = jsonData.meta.lastTaskId;
+      } else if (jsonData.meta) {
+        // If meta exists but lastTaskId is missing or invalid, default it
+        jsonData.meta.lastTaskId = 0;
+      } else {
+        // If meta itself is missing, create it
+        jsonData.meta = { schemaVersion: DEFAULT_SCHEMA_VERSION, lastTaskId: 0 };
+      }
+
+      // Validate the structure after potential migration
       const parseResult = TasksFileSchema.safeParse(jsonData);
       if (!parseResult.success) {
-        console.error('Invalid tasks file structure:', parseResult.error.errors);
-        // Decide on recovery strategy: throw, return default, attempt migration?
-        // For now, throw an error indicating corruption or incompatibility.
+        console.error('Invalid tasks file structure after migration/validation:', parseResult.error.errors);
         throw new Error(`Tasks file at ${this.tasksFilePath} is invalid or corrupted. Schema errors: ${parseResult.error.message}`);
       }
       // console.log(`Successfully read and validated data from ${this.tasksFilePath}`);
@@ -80,7 +99,7 @@ export class JsonFileTaskStorage implements ITaskStorage {
         console.log(`Tasks file not found at ${this.tasksFilePath}. Creating default structure.`);
         // File doesn't exist, return default structure and write it back
         const defaultData: TasksFile = {
-          meta: { schemaVersion: DEFAULT_SCHEMA_VERSION, lastId: '0' },
+          meta: { schemaVersion: DEFAULT_SCHEMA_VERSION, lastTaskId: 0 }, // Use lastTaskId
           tasks: [],
         };
         // Write the default structure back to the file
@@ -143,13 +162,8 @@ export class JsonFileTaskStorage implements ITaskStorage {
   async getNextId(): Promise<string> {
     await this.ensureInitialized();
     const data = await this._readDataFile();
-    const lastIdNumber = parseInt(data.meta.lastId, 10);
-    if (isNaN(lastIdNumber)) {
-        console.error(`Invalid lastId found in metadata: ${data.meta.lastId}. Resetting to 0.`);
-        // Potentially save the corrected metadata here or handle it in addTask
-        return '1'; // Start from 1 if lastId was invalid
-    }
-    const nextIdNumber = lastIdNumber + 1;
+    // lastTaskId is guaranteed to be a non-negative integer by schema validation and migration
+    const nextIdNumber = data.meta.lastTaskId + 1;
     return nextIdNumber.toString();
   }
 
@@ -184,7 +198,8 @@ export class JsonFileTaskStorage implements ITaskStorage {
     TaskSchema.parse(newTask);
 
     const updatedTasks = [...currentData.tasks, newTask];
-    const updatedMeta = { ...currentData.meta, lastId: nextId }; // Update lastId in metadata
+    // Update lastTaskId with the numeric value of the new ID
+    const updatedMeta = { ...currentData.meta, lastTaskId: parseInt(nextId, 10) };
 
     await this._writeDataFile({ meta: updatedMeta, tasks: updatedTasks });
     return newTask;

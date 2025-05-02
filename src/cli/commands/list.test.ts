@@ -1,12 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Command } from 'commander';
 
-import React from 'react'; // Keep React import if components are mocked later
 import { TaskManager } from '../../core/TaskManager';
-// Re-import necessary types/functions
 import { listAction } from './list'; // Import the extracted action
 // import { Command } from 'commander'; // No longer needed
-import { Task } from '../../types/task';
+import { Task } from '@/types/task';
 // Keep component imports for potential future use, but keep mocks commented
 import TaskList from '../components/TaskList';
 import ErrorDisplay from '../components/ErrorDisplay';

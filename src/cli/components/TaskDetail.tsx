@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Text, Spacer } from 'ink';
 import Divider from 'ink-divider';
 import ProgressBar from './Ink/ProgressBar';
-import { Task, Subtask } from '../../types/task';
+import { Task, Subtask } from '@/types/task';
 import StatusLabel from './StatusLabel';
 
 interface TaskDetailProps {

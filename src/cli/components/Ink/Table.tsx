@@ -18,7 +18,7 @@ type ScalarDict = {
     [key: string]: Scalar
 }
 
-export type CellProps = React.PropsWithChildren<{ column: number }>
+export type CellProps = React.PropsWithChildren<{ column: number; row?: number }> // Make row optional
 
 export type TableProps<T extends ScalarDict> = {
     /**
@@ -222,11 +222,11 @@ export default class Table<T extends ScalarDict> extends React.Component<
                     // Calculate the hash of the row based on its value and position
                     const key = `row-${simpleSha1(JSON.stringify(row))}-${index}`
 
-                    // Construct a row.
+                    // Construct a row, passing the rowIndex
                     return (
                         <Box flexDirection="column" key={key}>
                             {this.separator({ key: `separator-${key}`, columns, data: {} })}
-                            {this.data({ key: `data-${key}`, columns, data: row })}
+                            {this.data({ key: `data-${key}`, columns, data: row, rowIndex: index })}
                         </Box>
                     )
                 })}
@@ -243,7 +243,7 @@ type RowConfig = {
     /**
      * Component used to render cells.
      */
-    cell: (props: CellProps) => JSX.Element
+    cell: (props: CellProps) => JSX.Element;
     /**
      * Tells the padding of each cell.
      */
@@ -268,8 +268,9 @@ type RowConfig = {
 
 type RowProps<T extends ScalarDict> = {
     key: string
-    data: Partial<T>
-    columns: Column<T>[]
+    data: Partial<T>;
+    columns: Column<T>[];
+    rowIndex?: number; // Make rowIndex optional
 }
 
 type Column<T> = {
@@ -282,7 +283,7 @@ type Column<T> = {
  * Constructs a Row element from the configuration.
  */
 function row<T extends ScalarDict>(
-    config: RowConfig,
+    config: RowConfig
 ): (props: RowProps<T>) => JSX.Element {
     /* This is a component builder. We return a function. */
 
@@ -313,7 +314,8 @@ function row<T extends ScalarDict>(
                         const key = `${props.key}-empty-${column.key}`
 
                         return (
-                            <config.cell key={key} column={colI}>
+                            // Pass rowIndex only if it exists
+                            <config.cell key={key} column={colI} row={props.rowIndex}>
                                 {skeleton.line.repeat(column.width)}
                             </config.cell>
                         )
@@ -326,7 +328,8 @@ function row<T extends ScalarDict>(
 
                         return (
                             /* prettier-ignore */
-                            <config.cell key={key} column={colI}>
+                             // Pass rowIndex only if it exists
+                            <config.cell key={key} column={colI} row={props.rowIndex}>
                                 {`${skeleton.line.repeat(ml)}${String(value)}${skeleton.line.repeat(mr)}`}
                             </config.cell>
                         )

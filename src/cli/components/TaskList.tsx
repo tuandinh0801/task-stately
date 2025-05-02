@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import Table from './Ink/Table'; 
-import { Task, TaskStatusSchema } from '../../types/task';
+import { Task, TaskStatusSchema } from '@/types/task';
 import StatusLabel from './StatusLabel';
 // import ProgressBar from 'ink-progress-bar'; // Import if adding progress bar later
 

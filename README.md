@@ -125,9 +125,16 @@ The primary way to interact with `task-stately` is through its CLI.
     ```bash
     task-stately init
     ```
-*   **Add Task:** Adds a new task.
+*   **Add Task:** Adds a new task. You can provide details via flags or use the interactive mode.
     ```bash
-    task-stately add --title "Implement feature X" --description "Details about feature X..." --priority high
+    # Add task using flags
+    task-stately add --title "Implement feature X" --description "Details..." --priority high
+
+    # Add task interactively (prompts for details)
+    task-stately add --interactive
+
+    # Add task (will trigger interactive mode if required options like --title are missing)
+    task-stately add
     ```
 *   **List Tasks:** Shows a list of all tasks.
     ```bash
@@ -139,9 +146,16 @@ The primary way to interact with `task-stately` is through its CLI.
     ```bash
     task-stately show <task-id>
     ```
-*   **Update Task:** Modifies an existing task.
+*   **Update Task:** Modifies an existing task by ID. You can provide updates via flags or use the interactive mode.
     ```bash
+    # Update task using flags
     task-stately update <task-id> --status in-progress --description "Updated details..."
+
+    # Update task interactively (prompts for fields to update)
+    task-stately update <task-id> --interactive
+
+    # Update task (will trigger interactive mode if no update options are provided)
+    task-stately update <task-id>
     ```
 *   **Delete Task:** Removes a task by ID.
     ```bash

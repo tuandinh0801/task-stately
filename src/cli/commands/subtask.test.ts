@@ -10,7 +10,7 @@ import {
   Subtask,
   TaskNotFoundError,
   SubtaskNotFoundError,
-} from '../../types/task';
+} from '@/types/task';
 
 // Mock TaskManager
 vi.mock('../../core/TaskManager');

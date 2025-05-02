@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi, Mocked } from 'vitest';
 import { TaskManager } from './TaskManager';
 import { ITaskStorage, NewTaskData, UpdateTaskData, NewSubtaskData, UpdateSubtaskData } from './storage/ITaskStorage';
 import { Task, Subtask, TaskStatusSchema, TaskPrioritySchema, TaskTypeSchema } from '@/types/task';
-import { v4 as uuidv4 } from 'uuid'; // Import uuid if needed for testing subtask IDs
+// Removed uuidv4 import as subtask IDs are now sequential
 
 // Mock the storage interface
 const mockStorage: Mocked<ITaskStorage> = {
@@ -72,7 +72,7 @@ describe('TaskManager', () => {
   });
 
   it('getTask should call storage.getTaskById and return the result', async () => {
-    const taskId = 'task-123';
+    const taskId = '1'; // Use sequential ID
     const expectedTask = createSampleTask(taskId);
     mockStorage.getTaskById.mockResolvedValue(expectedTask);
 
@@ -84,7 +84,7 @@ describe('TaskManager', () => {
   });
 
    it('getTask should return undefined if storage returns undefined', async () => {
-    const taskId = 'non-existent';
+    const taskId = '999'; // Use a non-existent sequential ID
     mockStorage.getTaskById.mockResolvedValue(undefined);
 
     const result = await taskManager.getTask(taskId);
@@ -105,7 +105,7 @@ describe('TaskManager', () => {
   });
 
   it('updateTask should call storage.updateTask after finding the task', async () => {
-    const taskId = 'task-abc';
+    const taskId = '2'; // Use sequential ID
     const updates: UpdateTaskData = { title: 'Updated Title', status: 'done' };
     const originalTask = createSampleTask(taskId);
     const expectedUpdatedTask = { ...originalTask, ...updates, updatedAt: new Date().toISOString() }; // Simulate update
@@ -124,7 +124,7 @@ describe('TaskManager', () => {
   });
 
   it('updateTask should throw error if task to update is not found', async () => {
-    const taskId = 'non-existent';
+    const taskId = '999'; // Use a non-existent sequential ID
     const updates: UpdateTaskData = { title: 'Updated Title' };
     mockStorage.getTaskById.mockResolvedValue(undefined); // Task not found
 
@@ -135,7 +135,7 @@ describe('TaskManager', () => {
   });
 
   it('deleteTask should call storage.deleteTask after finding the task', async () => {
-    const taskId = 'task-xyz';
+    const taskId = '3'; // Use sequential ID
     const existingTask = createSampleTask(taskId);
     mockStorage.getTaskById.mockResolvedValue(existingTask); // Task found
     mockStorage.deleteTask.mockResolvedValue(true); // Simulate successful deletion
@@ -149,7 +149,7 @@ describe('TaskManager', () => {
   });
 
   it('deleteTask should throw error if task to delete is not found', async () => {
-    const taskId = 'non-existent';
+    const taskId = '999'; // Use a non-existent sequential ID
     mockStorage.getTaskById.mockResolvedValue(undefined); // Task not found
 
     await expect(taskManager.deleteTask(taskId)).rejects.toThrow(
@@ -161,9 +161,9 @@ describe('TaskManager', () => {
   // --- Subtask Method Tests ---
 
   it('addSubtask should add a subtask to the parent task', async () => {
-    const parentId = 'parent-1';
-    const parentTask = createSampleTask(parentId);
-    const newSubData: NewSubtaskData = { title: 'New Subtask' };
+    const parentId = '1'; // Use sequential ID
+    const parentTask = createSampleTask(parentId, { subtasks: [] }); // Ensure subtasks array exists
+    const newSubData: NewSubtaskData = { title: 'New Subtask 1.1' };
 
     mockStorage.getTaskById.mockResolvedValue(parentTask);
     // Mock updateTask to simulate saving the parent with the new subtask
@@ -177,17 +177,42 @@ describe('TaskManager', () => {
     const addedSubtask = await taskManager.addSubtask(parentId, newSubData);
 
     expect(mockStorage.getTaskById).toHaveBeenCalledWith(parentId);
-    expect(addedSubtask.title).toBe('New Subtask');
-    expect(addedSubtask.id).toBeDefined(); // Check if UUID was generated
+    expect(addedSubtask.title).toBe('New Subtask 1.1');
+    expect(addedSubtask.id).toBe('1.1'); // Expect sequential ID
     expect(addedSubtask.status).toBe('pending');
     expect(mockStorage.updateTask).toHaveBeenCalledTimes(1);
     expect(mockStorage.updateTask).toHaveBeenCalledWith(parentId, {
-        subtasks: expect.arrayContaining([expect.objectContaining({ id: addedSubtask.id, title: 'New Subtask' })])
+        subtasks: expect.arrayContaining([expect.objectContaining({ id: '1.1', title: 'New Subtask 1.1' })])
+    });
+  });
+
+  it('addSubtask should generate correct sequential ID for second subtask', async () => {
+    const parentId = '2';
+    const existingSubtask = createSampleSubtask('2.1', { title: 'Existing Subtask 2.1' });
+    const parentTask = createSampleTask(parentId, { subtasks: [existingSubtask] });
+    const newSubData: NewSubtaskData = { title: 'New Subtask 2.2' };
+
+    mockStorage.getTaskById.mockResolvedValue(parentTask);
+    mockStorage.updateTask.mockImplementation(async (id, updates) => {
+      if (id === parentId && updates.subtasks && updates.subtasks.length === 2) {
+        return { ...parentTask, subtasks: updates.subtasks, updatedAt: new Date().toISOString() };
+      }
+      throw new Error('Unexpected update call');
+    });
+
+    const addedSubtask = await taskManager.addSubtask(parentId, newSubData);
+
+    expect(addedSubtask.id).toBe('2.2');
+    expect(mockStorage.updateTask).toHaveBeenCalledWith(parentId, {
+      subtasks: expect.arrayContaining([
+        expect.objectContaining({ id: '2.1' }),
+        expect.objectContaining({ id: '2.2', title: 'New Subtask 2.2' })
+      ])
     });
   });
 
    it('addSubtask should throw if parent task not found', async () => {
-    const parentId = 'non-existent-parent';
+    const parentId = '999'; // Use a non-existent sequential ID
     const newSubData: NewSubtaskData = { title: 'New Subtask' };
     mockStorage.getTaskById.mockResolvedValue(undefined);
 
@@ -197,21 +222,55 @@ describe('TaskManager', () => {
     expect(mockStorage.updateTask).not.toHaveBeenCalled();
   });
 
+  it('addSubtask should generate correct sequential ID after removing a subtask', async () => {
+    const parentId = '20';
+    const sub1 = createSampleSubtask('20.1');
+    const sub2 = createSampleSubtask('20.2'); // This one will be removed
+    const sub3 = createSampleSubtask('20.3');
+    const parentTask = createSampleTask(parentId, { subtasks: [sub1, sub2, sub3] });
+
+    // Simulate removing subtask '20.2' before adding a new one
+    const parentTaskAfterRemoval = { ...parentTask, subtasks: [sub1, sub3] };
+    mockStorage.getTaskById.mockResolvedValue(parentTaskAfterRemoval);
+
+    mockStorage.updateTask.mockImplementation(async (id, updates) => {
+      if (id === parentId && updates.subtasks && updates.subtasks.length === 3) {
+        // The new subtask should have ID '20.4' (maxSequence 3 + 1)
+        expect(updates.subtasks.find(s => s.id === '20.4')).toBeDefined();
+        return { ...parentTaskAfterRemoval, subtasks: updates.subtasks, updatedAt: new Date().toISOString() };
+      }
+      throw new Error('Unexpected update call in addSubtask after removal test');
+    });
+
+    const newSubData: NewSubtaskData = { title: 'New Subtask 20.4' };
+    const addedSubtask = await taskManager.addSubtask(parentId, newSubData);
+
+    expect(addedSubtask.id).toBe('20.4'); // Should continue from the highest existing (3) + 1
+    expect(mockStorage.updateTask).toHaveBeenCalledTimes(1);
+    expect(mockStorage.updateTask).toHaveBeenCalledWith(parentId, {
+      subtasks: expect.arrayContaining([
+        expect.objectContaining({ id: '20.1' }),
+        expect.objectContaining({ id: '20.3' }),
+        expect.objectContaining({ id: '20.4', title: 'New Subtask 20.4' })
+      ])
+    });
+  });
+
   it('updateSubtask should update the correct subtask', async () => {
-    const parentId = 'parent-2';
-    const subId = 'sub-abc';
-    const originalSubtask = createSampleSubtask(subId, { title: 'Original Sub' });
+    const parentId = '3'; // Use sequential ID
+    const subId = '3.1'; // Use sequential subtask ID
+    const originalSubtask = createSampleSubtask(subId, { title: 'Original Sub 3.1' });
     const parentTask = createSampleTask(parentId, { subtasks: [originalSubtask] });
-    const subUpdates: UpdateSubtaskData = { title: 'Updated Sub', status: 'done' };
+    const subUpdates: UpdateSubtaskData = { title: 'Updated Sub 3.1', status: 'done' };
 
     mockStorage.getTaskById.mockResolvedValue(parentTask);
     mockStorage.updateTask.mockImplementation(async (id, updates) => {
         if (id === parentId && updates.subtasks && updates.subtasks.length === 1) {
-             const updatedSub = updates.subtasks[0];
-             expect(updatedSub.id).toBe(subId);
-             expect(updatedSub.title).toBe('Updated Sub');
-             expect(updatedSub.status).toBe('done');
-             return { ...parentTask, subtasks: updates.subtasks, updatedAt: new Date().toISOString() };
+            const updatedSub = updates.subtasks[0];
+            expect(updatedSub.id).toBe(subId);
+            expect(updatedSub.title).toBe('Updated Sub 3.1');
+            expect(updatedSub.status).toBe('done');
+            return { ...parentTask, subtasks: updates.subtasks, updatedAt: new Date().toISOString() };
         }
         throw new Error('Unexpected update call');
     });
@@ -220,17 +279,17 @@ describe('TaskManager', () => {
 
     expect(mockStorage.getTaskById).toHaveBeenCalledWith(parentId);
     expect(updatedSubtaskResult.id).toBe(subId);
-    expect(updatedSubtaskResult.title).toBe('Updated Sub');
+    expect(updatedSubtaskResult.title).toBe('Updated Sub 3.1');
     expect(updatedSubtaskResult.status).toBe('done');
     expect(mockStorage.updateTask).toHaveBeenCalledTimes(1);
     expect(mockStorage.updateTask).toHaveBeenCalledWith(parentId, {
-        subtasks: expect.arrayContaining([expect.objectContaining({ id: subId, title: 'Updated Sub', status: 'done' })])
+        subtasks: expect.arrayContaining([expect.objectContaining({ id: subId, title: 'Updated Sub 3.1', status: 'done' })])
     });
   });
 
    it('updateSubtask should throw if parent task not found', async () => {
-        const parentId = 'non-existent-parent';
-        const subId = 'sub-abc';
+        const parentId = '999'; // Use a non-existent sequential ID
+        const subId = '999.1';
         const subUpdates: UpdateSubtaskData = { title: 'Updated Sub' };
         mockStorage.getTaskById.mockResolvedValue(undefined);
 
@@ -241,9 +300,9 @@ describe('TaskManager', () => {
     });
 
     it('updateSubtask should throw if subtask not found', async () => {
-        const parentId = 'parent-3';
-        const subId = 'non-existent-sub';
-        const parentTask = createSampleTask(parentId, { subtasks: [createSampleSubtask('existing-sub')] });
+        const parentId = '4'; // Use sequential ID
+        const subId = '4.99'; // Non-existent subtask ID
+        const parentTask = createSampleTask(parentId, { subtasks: [createSampleSubtask('4.1')] });
         const subUpdates: UpdateSubtaskData = { title: 'Updated Sub' };
 
         mockStorage.getTaskById.mockResolvedValue(parentTask);
@@ -255,17 +314,17 @@ describe('TaskManager', () => {
     });
 
   it('removeSubtask should remove the correct subtask', async () => {
-    const parentId = 'parent-4';
-    const subIdToRemove = 'sub-to-remove';
-    const subToKeep = createSampleSubtask('sub-to-keep');
+    const parentId = '5'; // Use sequential ID
+    const subIdToRemove = '5.1'; // Use sequential subtask ID
+    const subToKeep = createSampleSubtask('5.2'); // Use sequential subtask ID
     const parentTask = createSampleTask(parentId, { subtasks: [createSampleSubtask(subIdToRemove), subToKeep] });
 
     mockStorage.getTaskById.mockResolvedValue(parentTask);
     mockStorage.updateTask.mockImplementation(async (id, updates) => {
         if (id === parentId && updates.subtasks) {
-             expect(updates.subtasks).toHaveLength(1);
-             expect(updates.subtasks[0].id).toBe('sub-to-keep');
-             return { ...parentTask, subtasks: updates.subtasks, updatedAt: new Date().toISOString() };
+            expect(updates.subtasks).toHaveLength(1);
+            expect(updates.subtasks[0].id).toBe('5.2');
+            return { ...parentTask, subtasks: updates.subtasks, updatedAt: new Date().toISOString() };
         }
         throw new Error('Unexpected update call');
     });
@@ -276,14 +335,14 @@ describe('TaskManager', () => {
     expect(mockStorage.getTaskById).toHaveBeenCalledWith(parentId);
     expect(mockStorage.updateTask).toHaveBeenCalledTimes(1);
     expect(mockStorage.updateTask).toHaveBeenCalledWith(parentId, {
-        subtasks: [expect.objectContaining({ id: 'sub-to-keep' })]
+        subtasks: [expect.objectContaining({ id: '5.2' })]
     });
   });
 
    it('removeSubtask should return false if subtask not found', async () => {
-    const parentId = 'parent-5';
-    const subIdToRemove = 'non-existent-sub';
-    const subToKeep = createSampleSubtask('sub-to-keep');
+    const parentId = '6'; // Use sequential ID
+    const subIdToRemove = '6.99'; // Non-existent subtask ID
+    const subToKeep = createSampleSubtask('6.1');
     const parentTask = createSampleTask(parentId, { subtasks: [subToKeep] });
 
     mockStorage.getTaskById.mockResolvedValue(parentTask);
@@ -298,8 +357,8 @@ describe('TaskManager', () => {
   // --- Dependency Method Tests ---
 
   it('addTaskDependency should add a dependency if valid and not present', async () => {
-    const taskId = 'task-a';
-    const depId = 'task-b';
+    const taskId = '7'; // Use sequential ID
+    const depId = '8'; // Use sequential ID
     const taskA = createSampleTask(taskId, { dependencies: [] });
     const taskB = createSampleTask(depId); // Dependency task
 
@@ -326,7 +385,7 @@ describe('TaskManager', () => {
   });
 
   it('addTaskDependency should throw if task tries to depend on itself', async () => {
-    const taskId = 'task-a';
+    const taskId = '9'; // Use sequential ID
     await expect(taskManager.addTaskDependency(taskId, taskId)).rejects.toThrow(
         'A task cannot depend on itself.'
     );
@@ -335,8 +394,8 @@ describe('TaskManager', () => {
   });
 
   it('addTaskDependency should throw if target task not found', async () => {
-    const taskId = 'non-existent';
-    const depId = 'task-b';
+    const taskId = '999'; // Use non-existent sequential ID
+    const depId = '10'; // Use sequential ID
     mockStorage.getTaskById.mockResolvedValue(undefined);
 
     await expect(taskManager.addTaskDependency(taskId, depId)).rejects.toThrow(
@@ -345,9 +404,9 @@ describe('TaskManager', () => {
     expect(mockStorage.updateTask).not.toHaveBeenCalled();
   });
 
-   it('addTaskDependency should throw if dependency task not found', async () => {
-    const taskId = 'task-a';
-    const depId = 'non-existent-dep';
+  it('addTaskDependency should throw if dependency task not found', async () => {
+    const taskId = '11'; // Use sequential ID
+    const depId = '998'; // Use non-existent sequential ID
     const taskA = createSampleTask(taskId);
 
     mockStorage.getTaskById.mockImplementation(async (id) => {
@@ -362,8 +421,8 @@ describe('TaskManager', () => {
   });
 
   it('addTaskDependency should not add dependency if it already exists', async () => {
-    const taskId = 'task-a';
-    const depId = 'task-b';
+    const taskId = '12'; // Use sequential ID
+    const depId = '13'; // Use sequential ID
     const taskA = createSampleTask(taskId, { dependencies: [depId] }); // Dependency already exists
     const taskB = createSampleTask(depId);
 
@@ -380,9 +439,9 @@ describe('TaskManager', () => {
   });
 
   it('removeTaskDependency should remove an existing dependency', async () => {
-    const taskId = 'task-a';
-    const depIdToRemove = 'task-b';
-    const depToKeep = 'task-c';
+    const taskId = '14'; // Use sequential ID
+    const depIdToRemove = '15'; // Use sequential ID
+    const depToKeep = '16'; // Use sequential ID
     const taskA = createSampleTask(taskId, { dependencies: [depIdToRemove, depToKeep] });
 
     mockStorage.getTaskById.mockResolvedValue(taskA);
@@ -403,9 +462,9 @@ describe('TaskManager', () => {
   });
 
   it('removeTaskDependency should not call update if dependency does not exist', async () => {
-    const taskId = 'task-a';
-    const depIdToRemove = 'non-existent-dep';
-    const depToKeep = 'task-c';
+    const taskId = '17'; // Use sequential ID
+    const depIdToRemove = '997'; // Use non-existent sequential ID
+    const depToKeep = '18'; // Use sequential ID
     const taskA = createSampleTask(taskId, { dependencies: [depToKeep] });
 
     mockStorage.getTaskById.mockResolvedValue(taskA);
@@ -418,8 +477,8 @@ describe('TaskManager', () => {
   });
 
    it('removeTaskDependency should throw if target task not found', async () => {
-    const taskId = 'non-existent';
-    const depId = 'task-b';
+    const taskId = '996'; // Use non-existent sequential ID
+    const depId = '19'; // Use sequential ID
     mockStorage.getTaskById.mockResolvedValue(undefined);
 
     await expect(taskManager.removeTaskDependency(taskId, depId)).rejects.toThrow(

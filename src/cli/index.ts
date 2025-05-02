@@ -1,8 +1,6 @@
 #!/usr/bin/env node
 
 import { program } from 'commander';
-import { render } from 'ink';
-import React from 'react';
 import { TaskManager } from '@/core/TaskManager'; // Use path alias
 import { JsonFileTaskStorage } from '@/core/storage/JsonFileTaskStorage'; // Use path alias
 import { registerInitCommand } from './commands/init'; // Import the init command

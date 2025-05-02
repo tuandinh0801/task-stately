@@ -81,7 +81,7 @@ export class SubtaskNotFoundError extends Error {
 export const TasksFileSchema = z.object({
   meta: z.object({
     schemaVersion: z.number().default(1),
-    lastId: z.string().default('0'), // Store last numeric ID as string if sequential
+    lastTaskId: z.number().int().nonnegative().default(0), // Store last numeric ID
   }),
   tasks: z.array(TaskSchema),
 });

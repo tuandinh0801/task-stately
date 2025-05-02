@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text } from 'ink';
-import { TaskStatus } from '../../types/task';
+import { TaskStatus } from '@/types/task';
 import { COLORS } from '../constants'; // Import the color constants
 
 interface StatusLabelProps {

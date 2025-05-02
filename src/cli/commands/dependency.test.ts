@@ -4,7 +4,7 @@ import {
   addDependencyLogic,
   removeDependencyLogic,
 } from './dependency'; // Import the logic functions (will fail initially)
-import { TaskNotFoundError } from '../../types/task';
+import { TaskNotFoundError } from '@/types/task';
 
 // Mock TaskManager
 vi.mock('../../core/TaskManager');

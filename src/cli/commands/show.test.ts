@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // import { Command } from 'commander'; // No longer needed for logic test
 import { TaskManager } from '../../core/TaskManager';
 import { getShowTaskLogic } from './show'; // Import the logic function
-import { Task } from '../../types/task';
+import { Task } from '@/types/task';
 
 // Mock TaskManager
 vi.mock('../../core/TaskManager');

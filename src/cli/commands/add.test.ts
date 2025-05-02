@@ -1,6 +1,8 @@
-import { describe, it, expect, vi, beforeEach, MockInstance } from 'vitest'; // Import MockInstance
+import { describe, it, expect, vi, beforeEach, MockInstance, Mocked } from 'vitest'; // Import MockInstance and Mocked
+import { Command } from 'commander';
+import inquirer from 'inquirer';
 import { TaskManager } from '../../core/TaskManager';
-import { addTaskLogic, AddTaskOptions } from './add'; // Import the logic function and options type
+import { addTaskLogic, AddTaskOptions, registerAddCommand } from './add'; // Import registerAddCommand
 import { NewTaskData } from '@/core/storage/ITaskStorage'; // Correct import path
 import {
   Task,
@@ -10,10 +12,17 @@ import {
   TaskPrioritySchema, // Import Zod schemas
   TaskTypeSchema,
   TaskStatusSchema,
-} from '../../types/task';
+} from '@/types/task';
 
-// Mock TaskManager
+// Mock dependencies
 vi.mock('../../core/TaskManager');
+vi.mock('inquirer');
+
+// Mock console
+const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
+const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+const mockProcessExit = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
 
 // Helper to create a mock task
 const createMockTask = (id: string, data: Partial<Task> = {}): Task => {
@@ -39,16 +48,20 @@ const createMockTask = (id: string, data: Partial<Task> = {}): Task => {
 
 
 describe('addTaskLogic', () => {
-  let taskManager: TaskManager;
+  let taskManager: Mocked<TaskManager>; // Use Mocked type
   let mockCreateTask: MockInstance<(data: NewTaskData) => Promise<Task>>;
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.clearAllMocks(); // Clears mocks including inquirer and console
 
-    // Create a TaskManager instance and spy on its createTask method
-    taskManager = new TaskManager({} as any); // We need an instance to pass
-    mockCreateTask = vi.spyOn(taskManager, 'createTask'); // Spy on the method
+    // Create a mocked TaskManager instance
+    taskManager = new TaskManager({} as any) as Mocked<TaskManager>;
+    // Ensure methods are mock functions if not automatically mocked by vi.mock
+    taskManager.createTask = vi.fn();
+    mockCreateTask = taskManager.createTask; // Assign the mock function
   });
+
+  // --- Tests for addTaskLogic (non-interactive part) ---
 
   it('should call taskManager.createTask with correct data and return the created task', async () => {
     const taskOptions: AddTaskOptions = {
@@ -161,6 +174,152 @@ describe('addTaskLogic', () => {
     await addTaskLogic(taskManager, taskOptions);
 
     expect(mockCreateTask).toHaveBeenCalledWith(expect.objectContaining(expectedCallData));
+  });
+
+});
+
+
+// --- Tests for registerAddCommand and interactive flow ---
+describe('registerAddCommand action handler (interactive)', () => {
+  let program: Command;
+  let taskManager: Mocked<TaskManager>;
+  let mockAddTaskLogic: MockInstance<typeof addTaskLogic>;
+
+  beforeEach(() => {
+    vi.clearAllMocks(); // Clear mocks including inquirer and console
+
+    program = new Command();
+    // Mock TaskManager instance and its methods
+    taskManager = new TaskManager({} as any) as Mocked<TaskManager>;
+    taskManager.createTask = vi.fn(); // Mock the underlying method used by addTaskLogic
+
+    // Mock the addTaskLogic function itself for testing the action handler's interaction
+    // We need to mock the module where it's defined if we import it directly
+    // For simplicity here, let's assume we can spy/mock it if it were structured differently,
+    // or we test the side effects (like console logs and inquirer calls).
+    // Let's focus on mocking inquirer and checking if createTask is called correctly via the logic.
+
+    // Mock inquirer.prompt
+    vi.mocked(inquirer.prompt).mockClear();
+
+    registerAddCommand(program, taskManager);
+  });
+
+  it('should call inquirer.prompt and addTaskLogic when --interactive is used and confirmed', async () => {
+    const mockAnswers = {
+      title: 'Interactive Task',
+      description: 'Interactive Desc',
+      priority: TaskPrioritySchema.enum.high, // Use Zod enum value
+      type: TaskTypeSchema.enum.bug,         // Use Zod enum value
+      status: TaskStatusSchema.enum.pending,   // Use Zod enum value
+      tags: 'tagA, tagB',
+      criteria: 'crit1, crit2',
+      assignee: 'tester',
+      confirm: true,
+    };
+    vi.mocked(inquirer.prompt).mockResolvedValue(mockAnswers);
+
+    const mockCreatedTask = createMockTask('interactive-1', { title: 'Interactive Task' });
+    taskManager.createTask.mockResolvedValue(mockCreatedTask); // Mock the underlying storage call
+
+    // Simulate running the command: node yourCli.js add --interactive
+    await program.parseAsync(['node', 'test', 'add', '--interactive']);
+
+    // Assertions
+    expect(inquirer.prompt).toHaveBeenCalledTimes(1);
+    // Check if prompt included expected questions (can be more specific)
+    expect(inquirer.prompt).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'title' }),
+        expect.objectContaining({ name: 'description' }),
+        expect.objectContaining({ name: 'priority' }),
+        expect.objectContaining({ name: 'type' }),
+        expect.objectContaining({ name: 'status' }),
+        expect.objectContaining({ name: 'tags' }),
+        expect.objectContaining({ name: 'criteria' }),
+        expect.objectContaining({ name: 'assignee' }),
+        expect.objectContaining({ name: 'confirm' }),
+      ])
+    );
+
+    // Check if the core logic (via taskManager.createTask) was called with processed data
+    expect(taskManager.createTask).toHaveBeenCalledTimes(1);
+    expect(taskManager.createTask).toHaveBeenCalledWith({
+      title: 'Interactive Task',
+      description: 'Interactive Desc',
+      priority: TaskPrioritySchema.enum.high, // Use Zod enum value
+      type: TaskTypeSchema.enum.bug,         // Use Zod enum value
+      status: TaskStatusSchema.enum.pending,   // Use Zod enum value
+      tags: ['tagA', 'tagB'], // Expect parsed array
+      acceptanceCriteria: ['crit1', 'crit2'], // Expect parsed array
+      assignee: 'tester',
+    });
+
+    // Check for success message
+    expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('created successfully'));
+    expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('created successfully'));
+    expect(mockConsoleError).not.toHaveBeenCalled();
+  });
+
+  it('should not call addTaskLogic and log cancellation message if user does not confirm', async () => {
+    const mockAnswers = {
+      title: 'Cancelled Task',
+      // ... other answers ...
+      confirm: false, // User cancels
+    };
+    vi.mocked(inquirer.prompt).mockResolvedValue(mockAnswers);
+
+    // Simulate running the command
+    await program.parseAsync(['node', 'test', 'add', '--interactive']);
+
+    // Assertions
+    expect(inquirer.prompt).toHaveBeenCalledTimes(1);
+    expect(taskManager.createTask).not.toHaveBeenCalled(); // Core logic should not be called
+    expect(mockConsoleLog).toHaveBeenCalledWith('Task creation cancelled.');
+    expect(mockConsoleError).not.toHaveBeenCalled();
+  });
+
+  it('should log an error if inquirer.prompt rejects', async () => {
+    const inquirerError = new Error('Inquirer failed');
+    vi.mocked(inquirer.prompt).mockRejectedValue(inquirerError);
+
+    // Simulate running the command
+    await program.parseAsync(['node', 'test', 'add', '--interactive']);
+
+    // Assertions
+    expect(inquirer.prompt).toHaveBeenCalledTimes(1);
+    expect(taskManager.createTask).not.toHaveBeenCalled();
+    expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('Error adding task: Inquirer failed'));
+    expect(mockConsoleLog).not.toHaveBeenCalledWith(expect.stringContaining('created successfully'));
+    // Check if exit code was set (optional, depends on exact implementation)
+    // expect(mockProcessExit).toHaveBeenCalledWith(1);
+  });
+
+  it('should log an error if addTaskLogic (taskManager.createTask) rejects in interactive mode', async () => {
+    const mockAnswers = {
+      title: 'Logic Error Task',
+      description: '',
+      priority: TaskPrioritySchema.enum.medium,
+      type: TaskTypeSchema.enum.chore,
+      status: TaskStatusSchema.enum.pending,
+      tags: '',
+      criteria: '',
+      assignee: '',
+      confirm: true, // User confirms
+    };
+    vi.mocked(inquirer.prompt).mockResolvedValue(mockAnswers);
+
+    const logicError = new Error('Failed to save task to storage');
+    taskManager.createTask.mockRejectedValue(logicError); // Mock the underlying storage call to fail
+
+    // Simulate running the command
+    await program.parseAsync(['node', 'test', 'add', '--interactive']);
+
+    // Assertions
+    expect(inquirer.prompt).toHaveBeenCalledTimes(1);
+    expect(taskManager.createTask).toHaveBeenCalledTimes(1); // Logic was called
+    expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('Error adding task: Failed to save task to storage'));
+    expect(mockConsoleLog).not.toHaveBeenCalledWith(expect.stringContaining('created successfully'));
   });
 
 });
