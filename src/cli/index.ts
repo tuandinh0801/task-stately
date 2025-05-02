@@ -9,7 +9,6 @@ import { registerShowCommand } from './commands/show'; // Import the show comman
 import { registerAddCommand } from './commands/add'; // Import the add command
 import { registerUpdateCommand } from './commands/update'; // Import the update command
 import { registerDeleteCommand } from './commands/delete'; // Import the delete command
-import { registerSubtaskCommand } from './commands/subtask'; // Import the subtask command
 import { registerDependencyCommand } from './commands/dependency'; // Import the dependency command
 
 // TODO: Define an ErrorDisplay component for better error rendering
@@ -31,7 +30,6 @@ async function run() {
   await registerAddCommand(program, taskManager); // Register the add command
   await registerUpdateCommand(program, taskManager); // Register the update command
   await registerDeleteCommand(program, taskManager); // Register the delete command
-  await registerSubtaskCommand(program, taskManager); // Register the subtask command
   await registerDependencyCommand(program, taskManager); // Register the dependency command
 
   await program.parseAsync(process.argv);

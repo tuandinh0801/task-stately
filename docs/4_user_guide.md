@@ -4,14 +4,29 @@ This guide covers the basic usage and command-line interface (CLI) functionaliti
 
 ## Listing Tasks (`list`)
 
-The `list` command displays your tasks. Recent improvements allow for filtering and sorting.
+The `list` command (alias `ls`) displays your tasks in a table format. By default, it shows only top-level tasks. The Status and Priority columns now include emojis (e.g., ⏳, ✅, ⬆️, ⬇️) for quick visual identification.
 
 ### Basic Usage
 
-To list all tasks:
+To list top-level tasks:
 
 ```bash
 task-stately list
+# or
+task-stately ls
+```
+
+### Displaying Subtasks Hierarchically
+
+To view all tasks, including subtasks indented hierarchically:
+
+- `--with-subtasks` (alias `-w`): Display tasks hierarchically, showing subtask relationships with indentation and branch characters (└─, ├─).
+
+Example: List all tasks hierarchically.
+```bash
+task-stately list --with-subtasks
+# or
+task-stately ls -w
 ```
 
 ### Filtering Tasks
@@ -20,21 +35,21 @@ You can filter tasks by their status:
 
 - `--status <status>`: Filter by status (e.g., `pending`, `in-progress`, `completed`).
 
-Example: List only pending tasks.
+Example: List only pending tasks (including any pending subtasks if using `-w`).
 ```bash
 task-stately list --status pending
 ```
 
 ### Sorting Tasks
 
-You can sort tasks by various fields:
+You can sort tasks by various fields. Sorting applies within each level of the hierarchy when using `--with-subtasks`.
 
-- `--sort-by <field>`: Sort by field (e.g., `id`, `title`, `status`, `dueDate`).
+- `--sort-by <field>`: Sort by field (e.g., `id`, `title`, `status`, `priority`, `dueDate`).
 - `--sort-order <order>`: Specify sort order (`asc` or `desc`, defaults to `asc`).
 
-Example: List tasks sorted by due date in descending order.
+Example: List all tasks hierarchically, sorted by priority in descending order.
 ```bash
-task-stately list --sort-by dueDate --sort-order desc
+task-stately list -w --sort-by priority --sort-order desc
 ```
 
 ---

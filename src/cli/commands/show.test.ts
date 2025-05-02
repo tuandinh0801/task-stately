@@ -7,8 +7,8 @@ import { Task } from '@/types/task';
 // Mock TaskManager
 vi.mock('../../core/TaskManager');
 
-// Helper to create a mock task
-const createMockTask = (id: string): Task => {
+// Helper to create a mock task (updated for hierarchy)
+const createMockTask = (id: string, data: Partial<Task> = {}): Task => {
   const now = new Date().toISOString();
   return {
     id,
@@ -22,9 +22,12 @@ const createMockTask = (id: string): Task => {
     dependencies: [],
     acceptanceCriteria: [],
     complexity: 1,
-    subtasks: [],
+    parentTaskId: null, // Added
+    childTaskIds: [],   // Added
+    // subtasks: [], // Removed
     artifacts: [],
     tags: [],
+    ...data, // Apply overrides
   };
 };
 
@@ -47,7 +50,7 @@ describe('getShowTaskLogic', () => {
 
   it('should call taskManager.getTask with the provided ID and return the task', async () => {
     const taskId = 'task-123';
-    const expectedTask = createMockTask(taskId);
+    const expectedTask = createMockTask(taskId, { parentTaskId: 'parent-0', childTaskIds: ['child-1', 'child-2'] }); // Add hierarchy data
     mockGetTask.mockResolvedValue(expectedTask);
 
     const result = await getShowTaskLogic(taskManager, taskId);
@@ -55,6 +58,9 @@ describe('getShowTaskLogic', () => {
     expect(mockGetTask).toHaveBeenCalledTimes(1);
     expect(mockGetTask).toHaveBeenCalledWith(taskId);
     expect(result).toEqual(expectedTask);
+    // Add assertions for hierarchy fields
+    expect(result?.parentTaskId).toBe('parent-0');
+    expect(result?.childTaskIds).toEqual(['child-1', 'child-2']);
   });
 
   it('should throw an error if the task is not found', async () => {

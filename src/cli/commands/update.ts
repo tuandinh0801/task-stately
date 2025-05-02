@@ -19,15 +19,16 @@ import {
 export async function updateTaskLogic(
   taskManager: TaskManager,
   id: string,
-  options: {
+  options: { // This options type is for the logic function, not commander directly
     title?: string;
     description?: string;
     priority?: string;
     type?: string;
     status?: string;
     tags?: string[];
-    criteria?: string[];
+    criteria?: string[]; // Corresponds to acceptanceCriteria in TaskManager
     assignee?: string;
+    parentId?: string | null; // Added parentId (can be null for root)
   },
 ): Promise<Task> {
   const updateData: UpdateTaskData = {};
@@ -67,6 +68,16 @@ export async function updateTaskLogic(
       updateData.assignee = options.assignee;
       optionsProvided = true;
     }
+    // Handle parentId separately, converting "null" or "" to null
+    if (options.parentId !== undefined) {
+      const parentIdValue = options.parentId;
+      if (parentIdValue === 'null' || parentIdValue === '') {
+        updateData.parentTaskId = null;
+      } else {
+        updateData.parentTaskId = parentIdValue;
+      }
+      optionsProvided = true;
+    }
   } catch (error: any) {
     // Re-throw Zod validation errors or other parsing errors
     if (error.errors) {
@@ -92,19 +103,23 @@ export async function updateTaskLogic(
   return updatedTask;
 }
 
-// Helper function to check if any update-specific options were provided
+// Helper function to check if any update-specific options were provided via CLI flags
 function hasUpdateOptions(options: any): boolean {
-  const updateKeys: (keyof UpdateTaskData | 'criteria')[] = [
+  // These keys correspond to the names used in commander's .option() method.
+  // This function checks the raw options object from commander.
+  const commanderOptionKeys = [
     'title',
     'description',
     'priority',
     'type',
     'status',
     'tags',
-    'criteria', // Commander uses 'criteria', logic uses 'acceptanceCriteria'
+    'criteria',
     'assignee',
+    'parentId' // This is the key defined in the .option() for commander
   ];
-  return updateKeys.some(key => options[key] !== undefined);
+  // Check if any of these options were actually passed (value is not undefined)
+  return commanderOptionKeys.some(key => options[key] !== undefined);
 }
 
 
@@ -137,7 +152,9 @@ export async function registerUpdateCommand(
       'Replace all existing acceptance criteria with the provided ones (space-separated)',
     )
     .option('--assignee <assignee>', 'New assignee for the task')
+    .option('--parentId <id>', 'New parent task ID (use "null", "none", or "root" to make it top-level)') // Added parentId option
     .action(async (id: string, options) => {
+      // Check if interactive mode is forced OR if no update flags were provided
       const isInteractive = options.interactive || !hasUpdateOptions(options);
 
       try {
@@ -218,9 +235,15 @@ export async function registerUpdateCommand(
               message: 'Assignee (leave empty to keep current):',
               default: existingTask.assignee || '',
             },
+            { // Add parentId prompt
+              type: 'input',
+              name: 'parentId',
+              message: 'Parent Task ID (leave empty to keep current, use "null", "none", or "root" for top-level):',
+              default: existingTask.parentTaskId || '', // Show current parent ID
+            },
           ];
 
-          const answers = await inquirer.prompt(questions as any[]); // Re-added 'as any[]' cast
+          const answers = await inquirer.prompt(questions as any[]);
 
           // --- Process answers ---
           // Helper to parse comma-separated strings like in add.ts
@@ -257,6 +280,20 @@ export async function registerUpdateCommand(
           if (answers.assignee !== (existingTask.assignee || '')) {
              finalUpdateData.assignee = answers.assignee || undefined;
           }
+          // Handle parentId update
+          const parentIdInput = answers.parentId?.toLowerCase();
+          if (parentIdInput !== (existingTask.parentTaskId || '')) { // Check if changed
+             if (parentIdInput === 'null' || parentIdInput === 'none' || parentIdInput === 'root' || parentIdInput === '') {
+                // Setting to null only if it wasn't already null/undefined
+                if (existingTask.parentTaskId !== null && existingTask.parentTaskId !== undefined) {
+                   finalUpdateData.parentTaskId = null;
+                }
+             } else if (parentIdInput) {
+                // Validate if the new parent ID exists? TaskManager should handle this.
+                finalUpdateData.parentTaskId = answers.parentId; // Use original case if not null/none/root
+             }
+             // If input is empty string and current parent is already null/undefined, do nothing
+          }
           // --- End Process answers ---
 
 
@@ -278,7 +315,15 @@ export async function registerUpdateCommand(
             ...(options.tags !== undefined && { tags: options.tags }), // Commander handles array parsing
             ...(options.criteria !== undefined && { acceptanceCriteria: options.criteria }), // Commander handles array parsing
             ...(options.assignee !== undefined && { assignee: options.assignee }),
+            // Handle parentId from non-interactive options
+            ...(options.parentId !== undefined && {
+               parentTaskId: ['null', 'none', 'root'].includes(options.parentId.toLowerCase())
+                 ? null
+                 : options.parentId
+             }),
           };
+
+           // Check if any actual update data was provided
            if (Object.keys(finalUpdateData).length === 0) {
              console.error('Error: No update options provided. Use --interactive or specify fields to update.');
              process.exitCode = 1;

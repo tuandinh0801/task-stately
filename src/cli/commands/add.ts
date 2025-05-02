@@ -24,6 +24,7 @@ export interface AddTaskOptions {
   criteria?: string; // Comma-separated string from CLI (or handle array if commander does)
   assignee?: string;
   interactive?: boolean; // Added for the new flag
+  parentId?: string;     // Added for hierarchical tasks
 }
 
 // Data structure passed to TaskManager.createTask
@@ -37,6 +38,7 @@ interface CreateTaskData {
   tags: string[];
   acceptanceCriteria: string[];
   assignee?: string;
+  parentTaskId?: string; // Renamed from parentId to match NewTaskData
 }
 
 
@@ -82,6 +84,7 @@ export async function addTaskLogic(
     tags: tagsArray,
     acceptanceCriteria: criteriaArray,
     assignee: options.assignee,
+    parentTaskId: options.parentId, // Map parentId option to parentTaskId field
   };
 
   // 5. Call TaskManager (this might throw its own errors)
@@ -121,6 +124,7 @@ export function registerAddCommand(
     .option('--tags <tags>', 'Comma-separated tags for the task')
     .option('--criteria <criteria>', 'Comma-separated acceptance criteria')
     .option('--assignee <assignee>', 'Assignee for the task')
+    .option('--parentId <id>', 'ID of the parent task') // Added parentId option
     .action(async (options: AddTaskOptions) => {
       try {
         let taskData: AddTaskOptions;
@@ -176,6 +180,11 @@ export function registerAddCommand(
               message: 'Assignee (optional):',
             },
             {
+              type: 'input', // Or potentially 'list' if we fetch existing tasks
+              name: 'parentId',
+              message: 'Parent Task ID (optional, leave blank for top-level):',
+            },
+            {
               type: 'confirm',
               name: 'confirm',
               message: 'Create task with the above details?',
@@ -198,6 +207,7 @@ export function registerAddCommand(
             tags: answers.tags, // addTaskLogic handles splitting
             criteria: answers.criteria, // addTaskLogic handles splitting
             assignee: answers.assignee,
+            parentId: answers.parentId || undefined, // Use undefined if blank
           };
 
         } else {

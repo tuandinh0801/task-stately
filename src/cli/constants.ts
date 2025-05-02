@@ -11,7 +11,7 @@ export const COLORS = {
   },
   priority: {
     low: 'gray',
-    medium: 'white', // Default or standard priority
+    medium: 'green', // Default or standard priority
     high: 'yellow',
     critical: 'red',
   },

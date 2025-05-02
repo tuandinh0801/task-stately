@@ -25,22 +25,24 @@ const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
 const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 const mockProcessExit = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
 
-// Helper to create a mock task
+// Helper to create a mock task (updated for hierarchy)
 const createMockTask = (id: string, data: Partial<Task> = {}): Task => {
   const now = new Date().toISOString();
   return {
     id,
     title: `Task ${id}`,
-    status: 'pending',
+    status: TaskStatusSchema.enum.pending,
     description: '',
     createdAt: now,
     updatedAt: now,
-    type: 'chore',
-    priority: 'medium',
+    type: TaskTypeSchema.enum.chore,
+    priority: TaskPrioritySchema.enum.medium,
     dependencies: [],
     acceptanceCriteria: [],
     complexity: 1,
-    subtasks: [],
+    parentTaskId: null, // Added
+    childTaskIds: [],   // Added
+    // subtasks: [], // Removed
     artifacts: [],
     tags: [],
     ...data,
@@ -193,6 +195,49 @@ describe('updateTaskLogic', () => { // Tests for the pure logic function
     expect(taskManager.updateTask).toHaveBeenCalledTimes(1); // Use taskManager.updateTask directly
     expect(taskManager.updateTask).toHaveBeenCalledWith(taskId, { title: 'Another Title' }); // Use taskManager.updateTask directly
   });
+
+  it('should call taskManager.updateTask with parentId if provided', async () => {
+    const taskId = 'task-parent-update';
+    const newParentId = 'new-parent-42';
+    const options = {
+      parentId: newParentId,
+    };
+    const expectedUpdateData: UpdateTaskData = {
+      parentTaskId: newParentId, // Expect parentId option to map to parentTaskId
+    };
+    const mockReturnedTask = createMockTask(taskId, expectedUpdateData);
+    taskManager.updateTask.mockResolvedValue(mockReturnedTask);
+
+    const result = await updateTaskLogic(taskManager, taskId, options);
+
+    expect(taskManager.updateTask).toHaveBeenCalledTimes(1);
+    expect(taskManager.updateTask).toHaveBeenCalledWith(taskId, expectedUpdateData);
+    expect(result).toEqual(mockReturnedTask);
+  });
+
+  it('should call taskManager.updateTask with parentId set to null if provided as "null" or empty string', async () => {
+    const taskId = 'task-orphan-update';
+    const testCases = [
+        { inputParentId: 'null', expectedParentTaskId: null },
+        { inputParentId: '', expectedParentTaskId: null },
+        // { inputParentId: undefined, expectedParentTaskId: undefined }, // This case means no change, tested elsewhere
+    ];
+
+    for (const { inputParentId, expectedParentTaskId } of testCases) {
+        taskManager.updateTask.mockClear(); // Clear mock for each case
+        const options = { parentId: inputParentId };
+        const expectedUpdateData: UpdateTaskData = {
+            parentTaskId: expectedParentTaskId,
+        };
+        const mockReturnedTask = createMockTask(taskId, { parentTaskId: expectedParentTaskId }); // Simulate the result
+        taskManager.updateTask.mockResolvedValue(mockReturnedTask);
+
+        await updateTaskLogic(taskManager, taskId, options);
+
+        expect(taskManager.updateTask).toHaveBeenCalledWith(taskId, expectedUpdateData);
+    }
+  });
+
 });
 
 // Keep the old describe block for command registration tests if needed,

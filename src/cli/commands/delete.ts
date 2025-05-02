@@ -11,16 +11,18 @@ import DeleteConfirmation from '../components/DeleteConfirmation'; // Add standa
  * Extracted pure logic for deleting a task.
  * @param taskManager - The TaskManager instance.
  * @param id - The ID of the task to delete.
- * @returns True if the task was deleted, false otherwise.
+ * @param cascade - Whether to delete child tasks recursively.
+ * @returns True if the task (and potentially children) were deleted, false otherwise.
  */
 export async function deleteTaskLogic(
   taskManager: TaskManager,
   id: string,
+  cascade: boolean = false, // Add cascade parameter with default
 ): Promise<boolean> {
   // Directly call and return the result from taskManager
   // Let the caller handle specific error types if needed,
   // but TaskManager.deleteTask typically returns boolean or throws other errors.
-  const deleted = await taskManager.deleteTask(id);
+  const deleted = await taskManager.deleteTask(id, cascade); // Pass cascade option
   return deleted;
 }
 
@@ -39,12 +41,14 @@ export async function registerDeleteCommand(
     .alias('rm')
     .description('Delete a task by its ID')
     .argument('<id>', 'ID of the task to delete')
-    .action(async (id: string) => {
+    .option('-c, --cascade', 'Delete child tasks recursively', false) // Add cascade option
+    .action(async (id: string, options: { cascade: boolean }) => { // Add options type
       // Render the interactive confirmation component using the standard import
       const app = render(
-        React.createElement(DeleteConfirmation, { // Ensure this uses the imported variable
+        React.createElement(DeleteConfirmation, {
           taskId: id,
           taskManager: taskManager,
+          cascade: options.cascade, // Pass cascade option to component
           onComplete: () => {
             // Optional: Add any logic needed after confirmation component exits
             // console.log('Confirmation component finished.');

@@ -20,6 +20,7 @@ type ScalarDict = {
 
 export type CellProps = React.PropsWithChildren<{ column: number; row?: number }> // Make row optional
 
+
 export type TableProps<T extends ScalarDict> = {
     /**
      * List of values (rows).
@@ -41,6 +42,7 @@ export type TableProps<T extends ScalarDict> = {
      * Component used to render a cell in the table.
      */
     cell: (props: CellProps) => JSX.Element
+
     /**
      * Component used to render the skeleton of the table.
      */
@@ -329,9 +331,13 @@ function row<T extends ScalarDict>(
                         return (
                             /* prettier-ignore */
                              // Pass rowIndex only if it exists
-                            <config.cell key={key} column={colI} row={props.rowIndex}>
-                                {`${skeleton.line.repeat(ml)}${String(value)}${skeleton.line.repeat(mr)}`}
-                            </config.cell>
+                             <Text>
+                                {skeleton.line.repeat(ml)}
+                                <config.cell key={key} column={colI} row={props.rowIndex}>
+                                    {String(value)}
+                                </config.cell>
+                                {skeleton.line.repeat(mr)}
+                             </Text>
                         )
                     }
                 }),

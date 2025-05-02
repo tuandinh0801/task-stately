@@ -1,12 +1,21 @@
-import { omit } from 'lodash'
 import {
   ITaskStorage,
   NewTaskData,
   UpdateTaskData,
-  NewSubtaskData,
-  UpdateSubtaskData,
+  // Removed: NewSubtaskData,
+  // Removed: UpdateSubtaskData,
 } from '@/core/storage/ITaskStorage';
-import { Task, Subtask, TaskStatusSchema, SubtaskSchema } from '@/types/task';
+import { Task, TaskStatusSchema /* Removed: Subtask, SubtaskSchema */ } from '@/types/task';
+
+// Basic Error for missing tasks
+export class TaskNotFoundError extends Error {
+  constructor(taskId: string) {
+    super(`Task with ID "${taskId}" not found.`);
+    this.name = 'TaskNotFoundError';
+  }
+}
+
+
 export class TaskManager {
   private readonly storage: ITaskStorage;
 
@@ -20,9 +29,43 @@ export class TaskManager {
   // --- Task CRUD Methods ---
 
   async createTask(taskData: NewTaskData): Promise<Task> {
-    // Future: Add validation using Zod schemas if needed beyond storage layer
-    // Future: Add business logic (e.g., checking permissions, triggering notifications)
-    return this.storage.addTask(taskData);
+    // PRECONDITIONS: taskData is valid NewTaskData
+    // POSTCONDITIONS: Task is created, parent's child list updated (if applicable), created task returned
+
+    let parentTask: Task | undefined;
+
+    // 1. Validate Parent Existence (if parentTaskId provided)
+    if (taskData.parentTaskId != null) { // Check for null or undefined
+      parentTask = await this.storage.getTaskById(taskData.parentTaskId);
+      if (!parentTask) {
+        // TEST: createTask throws error if parentTaskId is provided but parent doesn't exist
+        throw new TaskNotFoundError(taskData.parentTaskId);
+      }
+    }
+
+    // 2. Create the Task via Storage
+    //    - Storage layer (`addTask`) is responsible for:
+    //        - Reading `meta.lastTaskId`.
+    //        - Incrementing `meta.lastTaskId`.
+    //        - Assigning the new ID (as a string) to the task.
+    //        - Setting `createdAt`, `updatedAt`.
+    //        - Initializing `childTaskIds` to [].
+    //        - Saving the new task and updated `meta`.
+    // TEST: createTask successfully creates a task with valid data
+    // TEST: createTask delegates ID generation (global sequential string) to the storage layer
+    // TEST: createTask correctly sets default values (status, priority, type) if not provided
+    // TEST: createTask initializes childTaskIds as an empty array via storage layer
+    const newTask = await this.storage.addTask(taskData);
+
+    // 3. Update Parent's Child List (if parentTaskId provided and parent exists)
+    if (parentTask) { // parentTask is only defined if parentTaskId was valid
+      // Ensure newTask.id is available after storage.addTask completes
+      const updatedChildIds = [...parentTask.childTaskIds, newTask.id];
+      // TEST: createTask adds the new task's ID to the parent's childTaskIds list
+      await this.storage.updateTask(parentTask.id, { childTaskIds: updatedChildIds });
+    }
+
+    return newTask;
   }
 
   async getTask(id: string): Promise<Task | undefined> {
@@ -36,140 +79,159 @@ export class TaskManager {
   }
 
   async updateTask(id: string, updates: UpdateTaskData): Promise<Task> {
-    // Future: Add validation of updates (e.g., allowed status transitions)
-    // Future: Add business logic (e.g., updating related tasks, notifications)
+    // PRECONDITIONS: id exists, updates is valid UpdateTaskData
+    // POSTCONDITIONS: Task is updated, hierarchy integrity maintained, updated task returned
 
-    // Ensure the task exists before attempting update (storage might throw, but good practice)
-    const existingTask = await this.getTask(id);
-    if (!existingTask) {
-        throw new Error(`Task with ID "${id}" not found.`);
+    // 1. Get Original Task
+    const originalTask = await this.storage.getTaskById(id);
+    if (!originalTask) {
+      // TEST: updateTask throws error if task with ID does not exist
+      throw new TaskNotFoundError(id);
     }
 
-    // Prevent changing immutable fields if necessary (though UpdateTaskData type already handles this)
-    const safeUpdates = { ...updates };
-    // No need to delete id or createdAt as they are not part of UpdateTaskData type
+    // 2. Handle Parent Change (Re-parenting)
+    // Check if parentTaskId is explicitly provided in the update AND is different from the current one
+    if (
+      updates.parentTaskId !== undefined &&
+      updates.parentTaskId !== originalTask.parentTaskId
+    ) {
+      const newParentId = updates.parentTaskId; // Can be null
+      const oldParentId = originalTask.parentTaskId;
+      let newParentTask: Task | undefined;
 
-    return this.storage.updateTask(id, safeUpdates);
-  }
+      // 2a. Validate New Parent (if not null)
+      if (newParentId !== null) {
+        newParentTask = await this.storage.getTaskById(newParentId);
+        if (!newParentTask) {
+          // TEST: updateTask throws error if new parentTaskId does not exist
+          throw new TaskNotFoundError(newParentId); // Or specific ParentNotFoundError
+        }
 
-  async deleteTask(id: string): Promise<boolean> {
-    // Future: Add business logic (e.g., check if task is depended upon, archive instead of delete)
-
-    // Ensure the task exists before attempting delete
-    const existingTask = await this.getTask(id);
-    if (!existingTask) {
-        // Or return false if preferred semantics are "was deletion successful?"
-        throw new Error(`Task with ID "${id}" not found.`);
-    }
-
-    // Future: Check dependencies - prevent deletion if other tasks depend on this one?
-    // const tasks = await this.getAllTasks();
-    // const dependents = tasks.filter(task => task.dependencies.includes(id));
-    // if (dependents.length > 0) {
-    //   throw new Error(`Cannot delete task "${id}" as tasks ${dependents.map(t => t.id).join(', ')} depend on it.`);
-    // }
-
-    return this.storage.deleteTask(id);
-  }
-
-  // --- Subtask Methods ---
-
-  async addSubtask(taskId: string, subtaskData: NewSubtaskData): Promise<Subtask> {
-    const parentTask = await this.getTask(taskId);
-    if (!parentTask) {
-      throw new Error(`Parent task with ID "${taskId}" not found.`);
-    }
-
-    const now = new Date().toISOString();
-
-    // Calculate the next sequence number for the subtask ID
-    const existingSubtasks = parentTask.subtasks || [];
-    let maxSequence = 0;
-    existingSubtasks.forEach(sub => {
-      const parts = sub.id.split('.');
-      if (parts.length === 2 && parts[0] === taskId) {
-        const sequence = parseInt(parts[1], 10);
-        if (!isNaN(sequence) && sequence > maxSequence) {
-          maxSequence = sequence;
+        // 2b. Check for Circular Hierarchy
+        // TEST: updateTask throws error when attempting to create a circular hierarchy
+        const isCircular = await this.isCircularHierarchy(id, newParentId);
+        if (isCircular) {
+          throw new Error(
+            `Setting parent to "${newParentId}" would create a circular hierarchy.`
+          );
         }
       }
-    });
-    const nextSequence = maxSequence + 1;
-    const newSubtaskId = `${taskId}.${nextSequence}`;
 
-    const newSubtask: Subtask = {
-      ...subtaskData,
-      id: newSubtaskId,
-      status: subtaskData.status ?? TaskStatusSchema.Enum.pending,
-      createdAt: now,
-      updatedAt: now,
-    };
+      // 2c. Update Old Parent's Children (if exists)
+      if (oldParentId !== null && oldParentId !== undefined) { // Explicit check for string
+        // Now oldParentId is definitely a string
+        const oldParentTask = await this.storage.getTaskById(oldParentId);
+        if (oldParentTask) { // Check if old parent still exists
+          const filteredChildIds = oldParentTask.childTaskIds.filter(
+            (childId) => childId !== id
+          );
+          // TEST: updateTask removes task ID from old parent's childTaskIds on re-parenting
+          await this.storage.updateTask(oldParentId, { // oldParentId is confirmed string here
+            childTaskIds: filteredChildIds,
+          });
+        }
+        // If old parent doesn't exist, we can't update it, but proceed anyway.
+      }
 
-    // Validate the new subtask
-    SubtaskSchema.parse(newSubtask);
+      // 2d. Update New Parent's Children (if exists)
+      if (newParentTask) { // newParentTask is defined only if newParentId was not null and valid
+        const updatedChildIds = [...newParentTask.childTaskIds, id];
+        // TEST: updateTask adds task ID to new parent's childTaskIds on re-parenting
+        await this.storage.updateTask(newParentId!, { // newParentId is non-null here
+          childTaskIds: updatedChildIds,
+        });
+      }
+    }
 
-    const updatedSubtasks = [...parentTask.subtasks, newSubtask];
+    // 3. Apply Updates via Storage
+    //    - Storage layer handles setting updatedAt
+    //    - Prevent direct modification of childTaskIds via updates; managed internally above
+    const safeUpdates = { ...updates };
+    // Explicitly delete childTaskIds from the user-provided updates object
+    // before passing it to the storage layer.
+    delete safeUpdates.childTaskIds;
 
-    // Update the parent task with the new subtasks array
-    await this.updateTask(taskId, { subtasks: updatedSubtasks });
+    // TEST: updateTask successfully updates task fields (title, description, status, etc.)
+    // TEST: updateTask correctly handles setting parentTaskId to null (making task top-level)
+    const updatedTask = await this.storage.updateTask(id, safeUpdates);
 
-    return newSubtask;
+    return updatedTask;
   }
 
-  async updateSubtask(
-    taskId: string,
-    subtaskId: string,
-    updates: UpdateSubtaskData
-  ): Promise<Subtask> {
-    const parentTask = await this.getTask(taskId);
-    if (!parentTask) {
-      throw new Error(`Parent task with ID "${taskId}" not found.`);
+
+  async deleteTask(id: string, cascade: boolean = false): Promise<boolean> {
+    // PRECONDITIONS: id exists
+    // POSTCONDITIONS: Task deleted. If cascade=false, parent's child list updated & children orphaned.
+    //                 If cascade=true, parent's child list updated & all descendants deleted.
+    //                 Returns true if initial task was found and attempt was made, false otherwise.
+
+    // 1. Get Task to Delete
+    const taskToDelete = await this.storage.getTaskById(id);
+    if (!taskToDelete) {
+      // TEST: deleteTask(id, false) returns false if task ID does not exist
+      // TEST: deleteTask(id, true) returns false if task ID does not exist
+      return false; // Task not found, nothing to delete
     }
 
-    const subtaskIndex = parentTask.subtasks.findIndex(sub => sub.id === subtaskId);
-    if (subtaskIndex === -1) {
-      throw new Error(`Subtask with ID "${subtaskId}" not found in task "${taskId}".`);
+    // 2. Update Parent's Child List (if has parent) - Do this regardless of cascade mode
+    if (taskToDelete.parentTaskId != null) { // Check for null or undefined
+      const parentTask = await this.storage.getTaskById(taskToDelete.parentTaskId);
+      if (parentTask) { // Check if parent still exists
+        const filteredChildIds = parentTask.childTaskIds.filter(
+          (childId) => childId !== id
+        );
+        // TEST: deleteTask(id, false) removes the deleted task's ID from its parent's childTaskIds
+        // TEST: deleteTask(id, true) removes the deleted task's ID from its parent's childTaskIds
+        await this.storage.updateTask(parentTask.id, {
+          childTaskIds: filteredChildIds,
+        });
+      }
+      // If parent doesn't exist, log warning? Proceed anyway.
+      // else { console.warn(`Parent task ${taskToDelete.parentTaskId} not found when deleting child ${id}.`); }
     }
 
-    const originalSubtask = parentTask.subtasks[subtaskIndex];
-    const updatedSubtask: Subtask = {
-      ...originalSubtask,
-      ...updates,
-      id: originalSubtask.id, // Ensure ID doesn't change
-      createdAt: originalSubtask.createdAt, // Ensure createdAt doesn't change
-      updatedAt: new Date().toISOString(),
-    };
+    // 3. Handle Children based on cascade flag
+    if (taskToDelete.childTaskIds && taskToDelete.childTaskIds.length > 0) {
+      if (cascade === true) {
+        // 3a. Cascade Delete: Recursively delete all children
+        //     Use Promise.allSettled for better error handling if one child deletion fails
+        // TEST: deleteTask(id, true) recursively calls deleteTask for all direct children with cascade=true
+        const childDeletePromises = taskToDelete.childTaskIds.map((childId) =>
+          this.deleteTask(childId, true) // Recursive call with cascade=true
+        );
+        const results = await Promise.allSettled(childDeletePromises);
+        // Optional: Check results for failures and potentially throw an aggregate error
+        const failedDeletions = results.filter(r => r.status === 'rejected');
+        if (failedDeletions.length > 0) {
+            console.error("Failed to cascade delete some children:", failedDeletions);
+            // Depending on requirements, might throw an error here
+        }
+        // TEST: deleteTask(id, true) successfully deletes a task and all its descendants
+      } else {
+        // 3b. Orphan Children (Default): Update children's parentTaskId to null
+        // TEST: deleteTask(id, false) sets parentTaskId to null for all direct children of the deleted task
+        const childOrphanPromises = taskToDelete.childTaskIds.map((childId) =>
+          this.storage.updateTask(childId, { parentTaskId: null }) // Set parent to null
+            .catch(err => {
+                // Log error if a child update fails, but don't stop the overall delete
+                console.error(`Failed to orphan child task ${childId} while deleting ${id}:`, err);
+            })
+        );
+        await Promise.all(childOrphanPromises);
+      }
+    }
 
-    // Validate the updated subtask
-    SubtaskSchema.parse(updatedSubtask);
+    // 4. Delete the Task itself via Storage
+    //    This happens *after* handling children, especially in cascade mode
+    // TEST: deleteTask(id, false) successfully removes the task from storage after orphaning children
+    // TEST: deleteTask(id, true) successfully removes the task from storage after deleting children
+    const deleted = await this.storage.deleteTask(id);
 
-    const updatedSubtasks = [...parentTask.subtasks];
-    updatedSubtasks[subtaskIndex] = updatedSubtask;
-
-    // Update the parent task
-    await this.updateTask(taskId, { subtasks: updatedSubtasks });
-
-    return updatedSubtask;
+    return deleted; // Return status of deleting the *initial* task
   }
 
-  async removeSubtask(taskId: string, subtaskId: string): Promise<boolean> {
-    const parentTask = await this.getTask(taskId);
-    if (!parentTask) {
-      throw new Error(`Parent task with ID "${taskId}" not found.`);
-    }
-
-    const initialLength = parentTask.subtasks.length;
-    const updatedSubtasks = parentTask.subtasks.filter(sub => sub.id !== subtaskId);
-
-    if (updatedSubtasks.length < initialLength) {
-      // Subtask was found and removed
-      await this.updateTask(taskId, { subtasks: updatedSubtasks });
-      return true;
-    } else {
-      // Subtask not found, nothing changed
-      return false;
-    }
-  }
+  // --- Subtask Methods (REMOVED) ---
+  // Subtask logic is now handled via parentTaskId and childTaskIds
 
   // --- Dependency Methods ---
 
@@ -218,9 +280,94 @@ export class TaskManager {
     }
   }
 
+  // --- Hierarchy Management ---
+
+  async getTaskAncestors(id: string): Promise<Task[]> {
+    // PRECONDITIONS: id exists
+    // POSTCONDITIONS: Returns an array of ancestor tasks, from parent up to root
+
+    const ancestors: Task[] = [];
+    const currentTask = await this.getTask(id);
+    if (!currentTask) {
+      // TEST: getTaskAncestors throws error if task ID does not exist
+      throw new TaskNotFoundError(id);
+    }
+
+    let parentId = currentTask.parentTaskId;
+    while (parentId != null) { // Loop while parentId is a valid string
+      const parentTask = await this.getTask(parentId);
+      if (!parentTask) {
+        // Data inconsistency: parentId exists but task doesn't. Log warning? Break?
+        // TEST: getTaskAncestors handles missing intermediate ancestors gracefully (e.g., logs warning, stops)
+        console.warn(`Data inconsistency: Parent task ${parentId} not found during ancestor lookup for task ${id}.`);
+        break;
+      }
+      ancestors.push(parentTask);
+      parentId = parentTask.parentTaskId; // Move up the chain
+    }
+
+    // TEST: getTaskAncestors returns an empty array for a top-level task
+    // TEST: getTaskAncestors returns the correct list of ancestors in order (parent, grandparent, ...)
+    return ancestors;
+  }
+
+  // async getTaskWithChildren(id: string, maxDepth: number = 1): Promise<Task | null> // Or a specific type TaskWithChildren
+  // Implementation deferred as per instructions
+
+
+  // --- Hierarchy Management ---
+
   // --- Other Potential Methods (from high-level plan) ---
 
   // async updateTaskStatus(id: string, status: TaskStatus): Promise<Task> { ... }
   // async validateProjectDependencies(): Promise<ValidationResult> { ... }
   // async getNextTasksToWorkOn(): Promise<Task[]> { ... }
+  // --- Helper/Validation Methods ---
+
+  private async isCircularHierarchy(
+    taskId: string,
+    potentialParentId: string | null | undefined
+  ): Promise<boolean> {
+    // PRECONDITIONS: taskId and potentialParentId are valid IDs (or potentialParentId is null/undefined)
+    // POSTCONDITIONS: Returns true if making potentialParentId the parent of taskId creates a cycle
+
+    if (potentialParentId == null) {
+      // TEST: isCircularHierarchy returns false if potential parent is null
+      return false; // Cannot be circular if becoming a top-level task
+    }
+
+    if (taskId === potentialParentId) {
+        // TEST: isCircularHierarchy returns true if potential parent is the task itself
+        return true; // Task cannot be its own parent
+    }
+
+    // Start checking from the potential parent and go upwards
+    let currentAncestorId: string | null | undefined = potentialParentId;
+    while (currentAncestorId != null) {
+      if (currentAncestorId === taskId) {
+        // TEST: isCircularHierarchy returns true if potential parent is a descendant of the task
+        return true; // Found the original task in its own ancestry path
+      }
+
+      const ancestorTask = await this.getTask(currentAncestorId);
+      if (!ancestorTask) {
+        // Should not happen if parent validation is done, but handle defensively
+        // TEST: isCircularHierarchy handles missing intermediate ancestors gracefully (e.g., logs warning, stops)
+        console.warn(`Data inconsistency: Ancestor task ${currentAncestorId} not found during circular check for task ${taskId}.`);
+        return false; // Cannot determine cycle if ancestor is missing
+      }
+
+      currentAncestorId = ancestorTask.parentTaskId; // Move up
+    }
+
+    // TEST: isCircularHierarchy returns false if potential parent is valid (ancestor or unrelated)
+    return false; // Reached the root without finding the original task
+  }
+
+  // PRIVATE ASYNC FUNCTION isCircularDependency(taskId: string, potentialDependencyId: string): Promise<boolean>
+      // Implementation for checking task dependencies (A -> B -> C -> A)
+      // Requires graph traversal (DFS or BFS) starting from potentialDependencyId
+      // TEST: isCircularDependency detects direct cycles (A -> B, B -> A)
+      // TEST: isCircularDependency detects indirect cycles (A -> B -> C -> A)
+      // TEST: isCircularDependency returns false when no cycle exists
 }

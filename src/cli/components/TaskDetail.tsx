@@ -1,28 +1,17 @@
 import React from 'react';
 import { Box, Text, Spacer } from 'ink';
 import Divider from 'ink-divider';
-import ProgressBar from './Ink/ProgressBar';
-import { Task, Subtask } from '@/types/task';
-import StatusLabel from './StatusLabel';
+import { Task } from '@/types/task';
 import Markdown from './Ink/Markdown';
 import useStdoutDimensions from './hooks/useStdoutDimensions';
+import { COLORS } from '../constants';
 
 interface TaskDetailProps {
   task: Task;
 }
 
-// Helper function to calculate subtask progress
-const calculateProgress = (subtasks: Subtask[]): number => {
-  if (!subtasks || subtasks.length === 0) {
-    return 0;
-  }
-  const completed = subtasks.filter((s) => s.status === 'done').length;
-  return completed / subtasks.length;
-};
-
 const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
-  const subtaskProgress = calculateProgress(task.subtasks ?? []);
-  const [width, height] = useStdoutDimensions()
+  const [width, height] = useStdoutDimensions();
 
   return (
     <Box flexDirection="column" padding={1} borderStyle="round" borderColor="green" width={width - 20}>
@@ -30,7 +19,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
       <Box marginBottom={1} alignItems="center">
         <Text bold>ID: {task.id}</Text>
         <Spacer />
-        <StatusLabel status={task.status} />
+        <Text color={COLORS.status[task.status]} />
       </Box>
       <Box marginBottom={1}>
         <Text bold>Title: </Text>
@@ -61,6 +50,20 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
          </Box>
       </Box>
 
+      {/* Hierarchical Task Info */}
+      {task.parentTaskId && (
+        <Box marginBottom={1}>
+          <Text bold>Parent Task: </Text>
+          <Text>{task.parentTaskId}</Text>
+        </Box>
+      )}
+      {task.childTaskIds && task.childTaskIds.length > 0 && (
+        <Box marginBottom={1}>
+          <Text bold>Child Tasks: </Text>
+          <Text>{task.childTaskIds.join(', ')}</Text>
+        </Box>
+      )}
+
       {/* Description Section */}
       {task.description && (
         <>
@@ -80,30 +83,6 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
           <Divider title="Dependencies" />
           <Box marginBottom={1}>
             <Text>{task.dependencies.join(', ')}</Text>
-          </Box>
-        </>
-      )}
-
-      {/* Subtasks Section */}
-      {task.subtasks && task.subtasks.length > 0 && (
-        <>
-          <Divider title={`Subtasks (${(subtaskProgress * 100).toFixed(0)}%)`} />
-          <Box marginBottom={1}>
-             <ProgressBar percent={subtaskProgress} />
-          </Box>
-          <Box flexDirection="column" marginBottom={1}>
-            {task.subtasks.map((subtask) => (
-              <Box key={subtask.id} marginLeft={1}>
-                <Text dimColor>└─ </Text>
-                <Box width={4}>
-                   <Text dimColor>{subtask.id}</Text>
-                </Box>
-                <Box flexGrow={1} marginRight={1}>
-                   <Text wrap="truncate-end">{subtask.title}</Text>
-                </Box>
-                <StatusLabel status={subtask.status} />
-              </Box>
-            ))}
           </Box>
         </>
       )}

@@ -26,7 +26,7 @@ describe('deleteTaskLogic', () => {
     const result = await deleteTaskLogic(taskManager, taskId);
 
     expect(mockDeleteTask).toHaveBeenCalledTimes(1);
-    expect(mockDeleteTask).toHaveBeenCalledWith(taskId);
+    expect(mockDeleteTask).toHaveBeenCalledWith(taskId, false); // Expect cascade: false
     expect(result).toBe(true);
   });
 
@@ -37,7 +37,7 @@ describe('deleteTaskLogic', () => {
     const result = await deleteTaskLogic(taskManager, taskId);
 
     expect(mockDeleteTask).toHaveBeenCalledTimes(1);
-    expect(mockDeleteTask).toHaveBeenCalledWith(taskId);
+    expect(mockDeleteTask).toHaveBeenCalledWith(taskId, false); // Expect cascade: false
     expect(result).toBe(false);
   });
 
@@ -50,7 +50,19 @@ describe('deleteTaskLogic', () => {
       'Database connection failed',
     );
     expect(mockDeleteTask).toHaveBeenCalledTimes(1);
-    expect(mockDeleteTask).toHaveBeenCalledWith(taskId);
+    expect(mockDeleteTask).toHaveBeenCalledWith(taskId, false); // Expect cascade: false
+  });
+
+  it('should call taskManager.deleteTask with cascade true if cascade option is true', async () => {
+    const taskId = 'task-to-cascade';
+    mockDeleteTask.mockResolvedValue(true); // Simulate successful deletion
+
+    // Call the logic function with cascade set to true
+    const result = await deleteTaskLogic(taskManager, taskId, true);
+
+    expect(mockDeleteTask).toHaveBeenCalledTimes(1);
+    expect(mockDeleteTask).toHaveBeenCalledWith(taskId, true); // Expect cascade: true
+    expect(result).toBe(true);
   });
 
    // Note: TaskNotFoundError is typically thrown by getTask, not deleteTask.

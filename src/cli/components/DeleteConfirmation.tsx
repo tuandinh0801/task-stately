@@ -9,12 +9,14 @@ import { deleteTaskLogic } from '../commands/delete'; // Import the logic functi
 interface DeleteConfirmationProps {
   taskId: string;
   taskManager: TaskManager;
+  cascade?: boolean; // Add cascade prop (optional)
   onComplete: () => void; // Callback to signal completion
 }
 
 const DeleteConfirmation: React.FC<DeleteConfirmationProps> = ({
   taskId,
   taskManager,
+  cascade = false, // Destructure cascade with default value
   onComplete,
 }) => {
   const [isConfirmed, setIsConfirmed] = useState<boolean | null>(null);
@@ -25,7 +27,8 @@ const DeleteConfirmation: React.FC<DeleteConfirmationProps> = ({
   const handleConfirm = async (confirmed: boolean) => {
     if (confirmed) {
       try {
-        const result = await deleteTaskLogic(taskManager, taskId);
+        // Pass cascade to the logic function
+        const result = await deleteTaskLogic(taskManager, taskId, cascade);
         if (result) {
           setDeleted(true);
         } else {
@@ -50,7 +53,10 @@ const DeleteConfirmation: React.FC<DeleteConfirmationProps> = ({
   // Render final messages after confirmation/cancellation
   if (isConfirmed === true) {
     if (deleted) {
-      return <SuccessMessage message={`Task with ID "${taskId}" deleted successfully.`} />;
+      const message = cascade
+        ? `Task with ID "${taskId}" and its children deleted successfully.`
+        : `Task with ID "${taskId}" deleted successfully.`;
+      return <SuccessMessage message={message} />;
     }
     if (error) {
       process.exitCode = 1; // Set exit code for errors
@@ -64,10 +70,14 @@ const DeleteConfirmation: React.FC<DeleteConfirmationProps> = ({
     return <Text>Deletion cancelled.</Text>;
   }
 
-  // Initial confirmation prompt
+  // Initial confirmation prompt - adjust message based on cascade
+  const confirmationMessage = cascade
+    ? `Are you sure you want to delete task "${taskId}" AND all its child tasks recursively? (y/N) `
+    : `Are you sure you want to delete task "${taskId}"? (y/N) `;
+
   return (
     <Box>
-      <Text>Are you sure you want to delete task "{taskId}"? (y/N) </Text>
+      <Text color="yellow">{confirmationMessage}</Text>
       <ConfirmInput onSubmit={handleConfirm} />
     </Box>
   );

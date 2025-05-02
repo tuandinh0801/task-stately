@@ -1,4 +1,4 @@
-import { Task, Subtask, TaskStatus, TaskPriority, TaskType } from '@/types/task';
+import { Task, TaskStatus, TaskPriority, TaskType } from '@/types/task'; // Removed Subtask
 
 // Helper type for data needed to create a new task.
 // Only includes fields that a user should provide.
@@ -14,23 +14,17 @@ export type NewTaskData = {
   artifacts?: string[];
   tags?: string[];
   assignee?: string;
-  // Explicitly exclude fields handled internally: id, createdAt, updatedAt, subtasks, dependencies
+  parentTaskId?: string | null; // Added for hierarchy
+  // Explicitly exclude fields handled internally: id, createdAt, updatedAt, childTaskIds, dependencies
 };
 
 // Helper type for data allowed when updating a task
 // Allows partial updates, omits fields that shouldn't be directly updatable (id, createdAt)
-export type UpdateTaskData = Partial<Omit<Task, 'id' | 'createdAt'>>;
+// Note: childTaskIds is *allowed* here for internal TaskManager updates,
+// but the public updateTask method should prevent users from setting it directly.
+export type UpdateTaskData = Partial<Omit<Task, 'id' | 'createdAt'>>; // Removed 'childTaskIds' from Omit
 
-// Helper type for data needed to create a new subtask.
-// Only includes fields that a user should provide.
-// Defaults for status, etc., are handled by the addSubtask implementation.
-export type NewSubtaskData = {
-  title: string;
-  status?: TaskStatus; // Optional status override
-};
-
-// Helper type for data allowed when updating a subtask
-export type UpdateSubtaskData = Partial<Omit<Subtask, 'id' | 'createdAt'>>;
+// Removed NewSubtaskData and UpdateSubtaskData
 
 
 export interface ITaskStorage {

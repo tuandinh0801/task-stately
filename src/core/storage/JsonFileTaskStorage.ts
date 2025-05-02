@@ -16,7 +16,7 @@ import {
 } from '@/types/task';
 
 const DEFAULT_TASKS_FILE = 'tasks.json';
-const DEFAULT_SCHEMA_VERSION = 1;
+const DEFAULT_SCHEMA_VERSION = 2; // Updated schema version
 
 export class JsonFileTaskStorage implements ITaskStorage {
   private readonly tasksFilePath: string;
@@ -66,27 +66,53 @@ export class JsonFileTaskStorage implements ITaskStorage {
       const jsonData = JSON.parse(fileContent);
 
       // --- Data Migration & Validation ---
-      // Handle potential old 'lastId' string for backward compatibility
+      // Handle potential old 'lastId' string and schema version
       let lastTaskId = 0;
-      if (jsonData.meta && typeof jsonData.meta.lastId === 'string') {
-        const parsedOldId = parseInt(jsonData.meta.lastId, 10);
-        if (!isNaN(parsedOldId)) {
-          lastTaskId = parsedOldId;
+      let schemaVersion = DEFAULT_SCHEMA_VERSION; // Assume current version initially
+
+      if (jsonData.meta) {
+        // Meta exists, check its contents
+        schemaVersion = jsonData.meta.schemaVersion ?? DEFAULT_SCHEMA_VERSION; // Get existing or default
+
+        // Handle old 'lastId' string migration
+        if (typeof jsonData.meta.lastId === 'string') {
+          const parsedOldId = parseInt(jsonData.meta.lastId, 10);
+          lastTaskId = !isNaN(parsedOldId) ? parsedOldId : 0;
+          delete jsonData.meta.lastId; // Remove old field
+          jsonData.meta.lastTaskId = lastTaskId; // Add new field
+          console.log(`Migrated lastId to lastTaskId: ${lastTaskId}`);
+        } else if (typeof jsonData.meta.lastTaskId === 'number') {
+          // Use existing lastTaskId if valid
+          lastTaskId = jsonData.meta.lastTaskId;
+        } else {
+          // lastTaskId is missing or invalid in existing meta, default it
+          lastTaskId = 0;
+          jsonData.meta.lastTaskId = lastTaskId;
         }
-        delete jsonData.meta.lastId; // Remove old field
-        jsonData.meta.lastTaskId = lastTaskId; // Add new field
-        console.log(`Migrated lastId: "${jsonData.meta.lastId}" to lastTaskId: ${lastTaskId}`);
-      } else if (jsonData.meta && typeof jsonData.meta.lastTaskId === 'number') {
-        lastTaskId = jsonData.meta.lastTaskId;
-      } else if (jsonData.meta) {
-        // If meta exists but lastTaskId is missing or invalid, default it
-        jsonData.meta.lastTaskId = 0;
+
+        // Check schema version after handling potential migrations
+        if (schemaVersion !== DEFAULT_SCHEMA_VERSION) {
+          console.warn(`Schema version mismatch: File has ${schemaVersion}, expected ${DEFAULT_SCHEMA_VERSION}. Attempting to parse anyway.`);
+          // Optional: Migrate data based on schemaVersion difference here
+          // Optional: Update schemaVersion in meta if migration occurs
+          // jsonData.meta.schemaVersion = DEFAULT_SCHEMA_VERSION; // Example: Force update after migration
+        }
+        // Ensure schemaVersion is correctly set in the object being parsed
+        jsonData.meta.schemaVersion = schemaVersion;
+
       } else {
-        // If meta itself is missing, create it
+        // Meta itself is missing, create it with defaults
+        console.log("Meta object missing, creating default.");
         jsonData.meta = { schemaVersion: DEFAULT_SCHEMA_VERSION, lastTaskId: 0 };
+        // Update local variables just in case, though they should already be default
+        lastTaskId = 0;
+        schemaVersion = DEFAULT_SCHEMA_VERSION;
       }
 
-      // Validate the structure after potential migration
+      // Ensure the final object structure matches TasksFileSchema before parsing
+      // (safeParse will handle validation based on the schema)
+
+      // Validate the structure after potential migration/creation
       const parseResult = TasksFileSchema.safeParse(jsonData);
       if (!parseResult.success) {
         console.error('Invalid tasks file structure after migration/validation:', parseResult.error.errors);
@@ -184,11 +210,13 @@ export class JsonFileTaskStorage implements ITaskStorage {
       description: taskData.description, // Keep as potentially undefined if optional
       assignee: taskData.assignee, // Keep as potentially undefined if optional
       // Initialize arrays/objects if not part of NewTaskData
-      dependencies: [],
+      parentTaskId: taskData.parentTaskId ?? null, // Handle parentTaskId, default to null
+      childTaskIds: [], // Initialize childTaskIds as empty array
+      dependencies: [], // Initialize dependencies as empty array
       acceptanceCriteria: taskData.acceptanceCriteria ?? [],
       artifacts: taskData.artifacts ?? [],
       tags: taskData.tags ?? [],
-      subtasks: [], // Initialize subtasks as empty array
+      // subtasks: [], // Removed - replaced by childTaskIds
       createdAt: now,
       updatedAt: now,
     };

@@ -39,7 +39,9 @@ const createMockTask = (id: string, data: Partial<Task> = {}): Task => {
     dependencies: [],
     acceptanceCriteria: [],
     complexity: 1,
-    subtasks: [],
+    // subtasks: [], // Removed obsolete field
+    parentTaskId: null, // Added new field
+    childTaskIds: [], // Added new field
     artifacts: [],
     tags: [],
     ...data,
@@ -173,6 +175,30 @@ describe('addTaskLogic', () => {
 
     await addTaskLogic(taskManager, taskOptions);
 
+    expect(mockCreateTask).toHaveBeenCalledWith(expect.objectContaining(expectedCallData));
+  });
+
+  it('should call taskManager.createTask with parentId if provided', async () => {
+    const taskOptions: AddTaskOptions = {
+      title: 'Child Task',
+      parentId: 'parent-123', // Provide parentId
+    };
+    const expectedCallData = {
+        title: 'Child Task',
+        priority: TaskPrioritySchema.enum.medium, // Default
+        type: TaskTypeSchema.enum.feature,      // Default
+        status: TaskStatusSchema.enum.pending,   // Default
+        tags: [],                                // Default
+        acceptanceCriteria: [],                // Default
+        assignee: undefined,                   // Default
+        parentTaskId: 'parent-123',            // Expect parentId to be passed
+    };
+    const mockReturnedTask = createMockTask('child-id', { ...expectedCallData });
+    mockCreateTask.mockResolvedValue(mockReturnedTask);
+
+    await addTaskLogic(taskManager, taskOptions);
+
+    expect(mockCreateTask).toHaveBeenCalledTimes(1);
     expect(mockCreateTask).toHaveBeenCalledWith(expect.objectContaining(expectedCallData));
   });
 
