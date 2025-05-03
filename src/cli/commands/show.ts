@@ -30,6 +30,20 @@ export async function getShowTaskLogic(
 }
 
 /**
+ * Fetches child tasks for a given parent task ID.
+ * @param taskManager The TaskManager instance.
+ * @param parentTaskId The ID of the parent task.
+ * @returns Promise resolving to an array of child Tasks.
+ */
+export async function getChildTasksLogic(
+  taskManager: TaskManager,
+  parentTaskId: string
+): Promise<Task[]> {
+  const allTasks = await taskManager.getAllTasks();
+  return allTasks.filter(task => task.parentTaskId === parentTaskId);
+}
+
+/**
  * Action handler for the 'show' command. Responsible for calling logic,
  * handling results/errors, and preparing the React element for rendering.
  * @param taskManager - The TaskManager instance.
@@ -42,15 +56,15 @@ export async function showAction(
 ): Promise<React.ReactElement> {
   try {
     const task = await getShowTaskLogic(taskManager, id);
-    // Explicitly check if task is undefined (not found)
-    if (!task) {
-      // Use the specific error message from original code
-      return React.createElement(ErrorDisplay, {
-        error: `Task with ID "${id}" not found.`,
-      });
+    
+    // If the task has child tasks, fetch them
+    let childTasks: Task[] = [];
+    if (task.childTaskIds.length > 0) {
+      childTasks = await getChildTasksLogic(taskManager, task.id);
     }
-    // On success (task is defined), create the TaskDetail element
-    return React.createElement(TaskDetail, { task });
+    
+    // On success (task is defined), create the TaskDetail element with child tasks
+    return React.createElement(TaskDetail, { task, childTasks });
   } catch (error) {
     // Handle unexpected errors from the logic function
     const errorToDisplay =

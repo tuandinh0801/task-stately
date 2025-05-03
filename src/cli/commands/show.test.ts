@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-// import { Command } from 'commander'; // No longer needed for logic test
 import { TaskManager } from '../../core/TaskManager';
-import { getShowTaskLogic } from './show'; // Import the logic function
+import { getShowTaskLogic, getChildTasksLogic } from './show';
 import { Task } from '@/types/task';
 
 // Mock TaskManager
@@ -30,6 +29,7 @@ const createMockTask = (id: string, data: Partial<Task> = {}): Task => {
     ...data, // Apply overrides
   };
 };
+
 
 describe('getShowTaskLogic', () => {
   let taskManager: TaskManager;
