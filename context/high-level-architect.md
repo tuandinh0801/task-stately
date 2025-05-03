@@ -46,12 +46,12 @@ graph LR
 
 1.  **Interfaces (CLI & MCP):** These are the entry points for users and programmatic clients (like AI assistants). They are responsible for parsing input, invoking the core logic, and presenting the results. They should contain minimal business logic themselves.
 2.  **Core Logic (TaskManager, DependencyManager, Storage Interface):** This layer contains the application's business rules.
-    *   `TaskManager` orchestrates operations (create, update, find tasks, manage subtasks, etc.). It understands *what* needs to happen.
-    *   `DependencyManager` (could be part of `TaskManager` or separate) handles the specific rules around task dependencies.
-    *   Crucially, the core logic depends only on the `ITaskStorage` **interface**, not a specific implementation. This makes it decoupled from the actual storage mechanism.
-3.  **Storage Implementation (JsonFileTaskStorage, tasks.json):** This layer handles the *how* of data persistence.
-    *   `JsonFileTaskStorage` implements the `ITaskStorage` interface, translating the required operations into reading from and writing to the `tasks.json` file.
-    *   `tasks.json` is the actual data file.
+    - `TaskManager` orchestrates operations (create, update, find tasks, manage subtasks, etc.). It understands _what_ needs to happen.
+    - `DependencyManager` (could be part of `TaskManager` or separate) handles the specific rules around task dependencies.
+    - Crucially, the core logic depends only on the `ITaskStorage` **interface**, not a specific implementation. This makes it decoupled from the actual storage mechanism.
+3.  **Storage Implementation (JsonFileTaskStorage, tasks.json):** This layer handles the _how_ of data persistence.
+    - `JsonFileTaskStorage` implements the `ITaskStorage` interface, translating the required operations into reading from and writing to the `tasks.json` file.
+    - `tasks.json` is the actual data file.
 
 **Proposed Folder Structure**
 
@@ -123,12 +123,12 @@ task-stately/
 
 **Key Points about Structure:**
 
-*   **`src/types`**: Central place for defining the core data structures (Task, Subtask) using Zod. Ensures consistency across the application.
-*   **`src/core`**: The heart of the application. It should not import anything from `src/cli` or `src/mcp`. Contains the `ITaskStorage` interface definition.
-*   **`src/core/storage`**: Contains the actual storage implementation(s). Only this part knows about `tasks.json`.
-*   **`src/cli`**: Contains everything related to the command-line interface, including Ink components and Commander setup. Imports from `src/core` and `src/types`.
-*   **`src/mcp`**: Contains everything related to the MCP server (FastMCP setup, tool definitions). Imports from `src/core` and `src/types`.
-*   **Tests (`*.test.ts`)**: Located alongside the files they test for easy discovery.
-*   **`dist/`**: Compiled output directory, ignored by Git. `package.json`'s `main`, `bin`, and `files` fields should point to appropriate files within `dist/`.
+- **`src/types`**: Central place for defining the core data structures (Task, Subtask) using Zod. Ensures consistency across the application.
+- **`src/core`**: The heart of the application. It should not import anything from `src/cli` or `src/mcp`. Contains the `ITaskStorage` interface definition.
+- **`src/core/storage`**: Contains the actual storage implementation(s). Only this part knows about `tasks.json`.
+- **`src/cli`**: Contains everything related to the command-line interface, including Ink components and Commander setup. Imports from `src/core` and `src/types`.
+- **`src/mcp`**: Contains everything related to the MCP server (FastMCP setup, tool definitions). Imports from `src/core` and `src/types`.
+- **Tests (`*.test.ts`)**: Located alongside the files they test for easy discovery.
+- **`dist/`**: Compiled output directory, ignored by Git. `package.json`'s `main`, `bin`, and `files` fields should point to appropriate files within `dist/`.
 
 This structure provides a clear separation, making the project easier to navigate, test, and maintain as it grows.

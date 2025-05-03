@@ -11,7 +11,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks }) => {
   if (!tasks.length) return <Text>No tasks found.</Text>;
 
   // Table mapping
-  const tableData = tasks.map(task => ({
+  const tableData = tasks.map((task) => ({
     ID: task.displayId,
     Title: task.title,
     Status: `${task.statusEmoji} ${task.status}`,
@@ -47,23 +47,48 @@ const TaskList: React.FC<TaskListProps> = ({ tasks }) => {
 
   return (
     <Box paddingX={1}>
-      <Table data={tableData} cell={({ column, row = 0, children }) => {
-        switch (column) {
-          case columnIndexes['Status']:
-            const statusText = children?.toString() || '';
-            return <Text color={statusText.includes('✅') ? 'green' : undefined}>{children}</Text>;
-          case columnIndexes['Priority']:
-            const priorityText = children?.toString() || '';
-            return <Text color={priorityText.includes('🔴') ? 'red' : priorityText.includes('🟡') ? 'yellow' : priorityText.includes('🟢') ? 'green' : undefined}>{children}</Text>
+      <Table
+        data={tableData}
+        cell={({ column, row = 0, children }) => {
+          switch (column) {
+            case columnIndexes['Status']:
+              const statusText = children?.toString() || '';
+              return (
+                <Text color={statusText.includes('✅') ? 'green' : undefined}>
+                  {children}
+                </Text>
+              );
+            case columnIndexes['Priority']:
+              const priorityText = children?.toString() || '';
+              return (
+                <Text
+                  color={
+                    priorityText.includes('🔴')
+                      ? 'red'
+                      : priorityText.includes('🟡')
+                        ? 'yellow'
+                        : priorityText.includes('🟢')
+                          ? 'green'
+                          : undefined
+                  }
+                >
+                  {children}
+                </Text>
+              );
 
-          case columnIndexes['Dependencies']:
-          case columnIndexes['Children']:
-            const dependencyText = children?.toString() || '';
-            return <Text color={dependencyText ? 'blueBright' : undefined}>{children}</Text>;
-          default:
-            return <Text>{children}</Text>;
-        }
-      }} />
+            case columnIndexes['Dependencies']:
+            case columnIndexes['Children']:
+              const dependencyText = children?.toString() || '';
+              return (
+                <Text color={dependencyText ? 'blueBright' : undefined}>
+                  {children}
+                </Text>
+              );
+            default:
+              return <Text>{children}</Text>;
+          }
+        }}
+      />
     </Box>
   );
 };

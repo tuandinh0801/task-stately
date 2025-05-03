@@ -111,12 +111,12 @@ ENDCOMPONENT
 1.  **Props:** The `TaskListProps` interface now expects `tasks` to be of type `DisplayTask[]`. The `isTree` prop is removed.
 2.  **No Tree Logic:** All conditional logic related to `isTree` and the recursive `renderNode` function are removed. The component now only handles rendering the table.
 3.  **Data Mapping:**
-    *   The `tableData` mapping now directly uses the `displayId` field from the `DisplayTask` object for the `ID` column. This field contains the pre-calculated indentation and branch characters.
-    *   The `Status` and `Priority` fields in `tableData` are constructed by prepending the `statusEmoji` and `priorityEmoji` (also from `DisplayTask`) to the respective text values.
+    - The `tableData` mapping now directly uses the `displayId` field from the `DisplayTask` object for the `ID` column. This field contains the pre-calculated indentation and branch characters.
+    - The `Status` and `Priority` fields in `tableData` are constructed by prepending the `statusEmoji` and `priorityEmoji` (also from `DisplayTask`) to the respective text values.
 4.  **Cell Renderer:**
-    *   The `cell` function within the `Table` component receives the combined emoji and text (e.g., "✅ done").
-    *   It needs to potentially extract the core text value (e.g., "done") if the `COLORS` map keys are based on the text status/priority rather than the combined string. This pseudocode includes a basic `coreValue` extraction example.
-    *   The rendering logic for `ID` column is simplified as the formatting is already done.
+    - The `cell` function within the `Table` component receives the combined emoji and text (e.g., "✅ done").
+    - It needs to potentially extract the core text value (e.g., "done") if the `COLORS` map keys are based on the text status/priority rather than the combined string. This pseudocode includes a basic `coreValue` extraction example.
+    - The rendering logic for `ID` column is simplified as the formatting is already done.
 
 ## 4. Completion
 

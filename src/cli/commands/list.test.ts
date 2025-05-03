@@ -9,7 +9,6 @@ import { prepareDisplayTasks, DisplayTask, getListTasksLogic } from './list'; //
 // import TaskList from '../components/TaskList';
 // import ErrorDisplay from '../components/ErrorDisplay'; // Not directly testing component rendering here
 
-
 // Mock TaskManager - Keep for listAction tests
 vi.mock('../../core/TaskManager');
 
@@ -21,8 +20,8 @@ vi.mock('../../core/TaskManager');
 //   default: vi.fn(() => React.createElement('ErrorDisplayMock')), // Mock component
 // }));
 
-
-describe('listAction (Core Logic)', () => { // Updated describe block name
+describe('listAction (Core Logic)', () => {
+  // Updated describe block name
   let program: Command;
   let taskManager: TaskManager;
 
@@ -49,12 +48,45 @@ describe('listAction (Core Logic)', () => { // Updated describe block name
   });
 
   // Test for successful logic path
-  it('should call taskManager.getAllTasks on success path', async () => { // Renamed test slightly
+  it('should call taskManager.getAllTasks on success path', async () => {
+    // Renamed test slightly
     const now = new Date().toISOString();
     // Update mock task structure
     const mockTasks: Task[] = [
-       { id: '1', title: 'Task 1', status: 'pending', description: '', createdAt: now, updatedAt: now, type: 'chore', priority: 'medium', dependencies: [], acceptanceCriteria: [], complexity: 1, parentTaskId: null, childTaskIds: [], artifacts: [], tags: [] },
-       { id: '2', title: 'Task 2', status: 'done', description: '', createdAt: now, updatedAt: now, type: 'feature', priority: 'high', dependencies: ['1'], acceptanceCriteria: ['AC1'], complexity: 5, parentTaskId: null, childTaskIds: [], artifacts: [], tags: [] },
+      {
+        id: '1',
+        title: 'Task 1',
+        status: 'pending',
+        description: '',
+        createdAt: now,
+        updatedAt: now,
+        type: 'chore',
+        priority: 'medium',
+        dependencies: [],
+        acceptanceCriteria: [],
+        complexity: 1,
+        parentTaskId: null,
+        childTaskIds: [],
+        artifacts: [],
+        tags: [],
+      },
+      {
+        id: '2',
+        title: 'Task 2',
+        status: 'done',
+        description: '',
+        createdAt: now,
+        updatedAt: now,
+        type: 'feature',
+        priority: 'high',
+        dependencies: ['1'],
+        acceptanceCriteria: ['AC1'],
+        complexity: 5,
+        parentTaskId: null,
+        childTaskIds: [],
+        artifacts: [],
+        tags: [],
+      },
     ];
     const mockGetAllTasks = vi.fn().mockResolvedValue(mockTasks);
     taskManager.getAllTasks = mockGetAllTasks;
@@ -94,7 +126,6 @@ describe('listAction (Core Logic)', () => { // Updated describe block name
     //   expect(receivedProps.error).toContain(errorMessage); // Temporarily commented out
     // }
   });
-
 });
 
 // --- Tests for prepareDisplayTasks ---
@@ -102,12 +133,108 @@ describe('listAction (Core Logic)', () => { // Updated describe block name
 // Mock Task Data for tests
 const now = new Date().toISOString();
 const MOCK_TASKS: Task[] = [
-  { id: '1', title: 'Root Task 1', status: 'pending', description: '', createdAt: now, updatedAt: now, type: 'chore', priority: 'medium', dependencies: [], acceptanceCriteria: [], complexity: 1, parentTaskId: null, childTaskIds: ['1.1', '1.2'], artifacts: [], tags: [] },
-  { id: '1.1', title: 'Subtask 1.1', status: 'in-progress', description: '', createdAt: now, updatedAt: now, type: 'feature', priority: 'high', dependencies: [], acceptanceCriteria: [], complexity: 2, parentTaskId: '1', childTaskIds: [], artifacts: [], tags: [] },
-  { id: '1.2', title: 'Subtask 1.2', status: 'done', description: '', createdAt: now, updatedAt: now, type: 'bug', priority: 'low', dependencies: [], acceptanceCriteria: [], complexity: 1, parentTaskId: '1', childTaskIds: ['1.2.1'], artifacts: [], tags: [] },
-  { id: '1.2.1', title: 'Sub-subtask 1.2.1', status: 'pending', description: '', createdAt: now, updatedAt: now, type: 'chore', priority: 'medium', dependencies: [], acceptanceCriteria: [], complexity: 1, parentTaskId: '1.2', childTaskIds: [], artifacts: [], tags: [] },
-  { id: '2', title: 'Root Task 2', status: 'pending', description: '', createdAt: now, updatedAt: now, type: 'chore', priority: 'medium', dependencies: [], acceptanceCriteria: [], complexity: 1, parentTaskId: null, childTaskIds: [], artifacts: [], tags: [] },
-  { id: '3', title: 'Orphan Task', status: 'pending', description: '', createdAt: now, updatedAt: now, type: 'chore', priority: 'medium', dependencies: [], acceptanceCriteria: [], complexity: 1, parentTaskId: '99', childTaskIds: [], artifacts: [], tags: [] }, // Orphan, parent '99' doesn't exist
+  {
+    id: '1',
+    title: 'Root Task 1',
+    status: 'pending',
+    description: '',
+    createdAt: now,
+    updatedAt: now,
+    type: 'chore',
+    priority: 'medium',
+    dependencies: [],
+    acceptanceCriteria: [],
+    complexity: 1,
+    parentTaskId: null,
+    childTaskIds: ['1.1', '1.2'],
+    artifacts: [],
+    tags: [],
+  },
+  {
+    id: '1.1',
+    title: 'Subtask 1.1',
+    status: 'in-progress',
+    description: '',
+    createdAt: now,
+    updatedAt: now,
+    type: 'feature',
+    priority: 'high',
+    dependencies: [],
+    acceptanceCriteria: [],
+    complexity: 2,
+    parentTaskId: '1',
+    childTaskIds: [],
+    artifacts: [],
+    tags: [],
+  },
+  {
+    id: '1.2',
+    title: 'Subtask 1.2',
+    status: 'done',
+    description: '',
+    createdAt: now,
+    updatedAt: now,
+    type: 'bug',
+    priority: 'low',
+    dependencies: [],
+    acceptanceCriteria: [],
+    complexity: 1,
+    parentTaskId: '1',
+    childTaskIds: ['1.2.1'],
+    artifacts: [],
+    tags: [],
+  },
+  {
+    id: '1.2.1',
+    title: 'Sub-subtask 1.2.1',
+    status: 'pending',
+    description: '',
+    createdAt: now,
+    updatedAt: now,
+    type: 'chore',
+    priority: 'medium',
+    dependencies: [],
+    acceptanceCriteria: [],
+    complexity: 1,
+    parentTaskId: '1.2',
+    childTaskIds: [],
+    artifacts: [],
+    tags: [],
+  },
+  {
+    id: '2',
+    title: 'Root Task 2',
+    status: 'pending',
+    description: '',
+    createdAt: now,
+    updatedAt: now,
+    type: 'chore',
+    priority: 'medium',
+    dependencies: [],
+    acceptanceCriteria: [],
+    complexity: 1,
+    parentTaskId: null,
+    childTaskIds: [],
+    artifacts: [],
+    tags: [],
+  },
+  {
+    id: '3',
+    title: 'Orphan Task',
+    status: 'pending',
+    description: '',
+    createdAt: now,
+    updatedAt: now,
+    type: 'chore',
+    priority: 'medium',
+    dependencies: [],
+    acceptanceCriteria: [],
+    complexity: 1,
+    parentTaskId: '99',
+    childTaskIds: [],
+    artifacts: [],
+    tags: [],
+  }, // Orphan, parent '99' doesn't exist
 ];
 
 // Helper to extract relevant fields for comparison
@@ -121,7 +248,6 @@ const simplifyDisplayTask = (task: DisplayTask) => ({
   priorityEmoji: task.priorityEmoji,
 });
 
-
 describe('prepareDisplayTasks', () => {
   it('FR-LIST-001/003: should show only root tasks (and orphans) when withSubtasks is false', () => {
     const result = prepareDisplayTasks(MOCK_TASKS, false);
@@ -130,9 +256,24 @@ describe('prepareDisplayTasks', () => {
     expect(simplifiedResult).toHaveLength(3); // Root 1, Root 2, Orphan 3
     expect(simplifiedResult).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ id: '1', displayId: '1', depth: 0, parentTaskId: null }),
-        expect.objectContaining({ id: '2', displayId: '2', depth: 0, parentTaskId: null }),
-        expect.objectContaining({ id: '3', displayId: '3', depth: 0, parentTaskId: '99' }), // Orphan treated as root
+        expect.objectContaining({
+          id: '1',
+          displayId: '1',
+          depth: 0,
+          parentTaskId: null,
+        }),
+        expect.objectContaining({
+          id: '2',
+          displayId: '2',
+          depth: 0,
+          parentTaskId: null,
+        }),
+        expect.objectContaining({
+          id: '3',
+          displayId: '3',
+          depth: 0,
+          parentTaskId: '99',
+        }), // Orphan treated as root
       ])
     );
     // Ensure no subtasks are present
@@ -151,15 +292,22 @@ describe('prepareDisplayTasks', () => {
 
     // Expected order: Root 1, Sub 1.1, Sub 1.2, Sub-sub 1.2.1, Root 2, Orphan 3
     expect(simplifiedResult).toHaveLength(6);
-    expect(simplifiedResult.map(t => t.id)).toEqual(['1', '1.1', '1.2', '1.2.1', '2', '3']);
+    expect(simplifiedResult.map((t) => t.id)).toEqual([
+      '1',
+      '1.1',
+      '1.2',
+      '1.2.1',
+      '2',
+      '3',
+    ]);
 
     // Check depths
-    expect(simplifiedResult.find(t => t.id === '1')?.depth).toBe(0);
-    expect(simplifiedResult.find(t => t.id === '1.1')?.depth).toBe(1);
-    expect(simplifiedResult.find(t => t.id === '1.2')?.depth).toBe(1);
-    expect(simplifiedResult.find(t => t.id === '1.2.1')?.depth).toBe(2);
-    expect(simplifiedResult.find(t => t.id === '2')?.depth).toBe(0);
-    expect(simplifiedResult.find(t => t.id === '3')?.depth).toBe(0); // Orphan treated as root
+    expect(simplifiedResult.find((t) => t.id === '1')?.depth).toBe(0);
+    expect(simplifiedResult.find((t) => t.id === '1.1')?.depth).toBe(1);
+    expect(simplifiedResult.find((t) => t.id === '1.2')?.depth).toBe(1);
+    expect(simplifiedResult.find((t) => t.id === '1.2.1')?.depth).toBe(2);
+    expect(simplifiedResult.find((t) => t.id === '2')?.depth).toBe(0);
+    expect(simplifiedResult.find((t) => t.id === '3')?.depth).toBe(0); // Orphan treated as root
   });
 
   it('FR-LIST-006/007/008: should format displayId with correct indentation and branches when withSubtasks is true', () => {
@@ -174,12 +322,18 @@ describe('prepareDisplayTasks', () => {
     // 2        (Root)
     // 3        (Orphan)
 
-    expect(simplifiedResult.find(t => t.id === '1')?.displayId).toBe('1');
-    expect(simplifiedResult.find(t => t.id === '1.1')?.displayId).toBe('├─ 1.1');
-    expect(simplifiedResult.find(t => t.id === '1.2')?.displayId).toBe('└─ 1.2');
-    expect(simplifiedResult.find(t => t.id === '1.2.1')?.displayId).toBe('   └─ 1.2.1'); // Indented under last child '1.2'
-    expect(simplifiedResult.find(t => t.id === '2')?.displayId).toBe('2');
-    expect(simplifiedResult.find(t => t.id === '3')?.displayId).toBe('3');
+    expect(simplifiedResult.find((t) => t.id === '1')?.displayId).toBe('1');
+    expect(simplifiedResult.find((t) => t.id === '1.1')?.displayId).toBe(
+      '├─ 1.1'
+    );
+    expect(simplifiedResult.find((t) => t.id === '1.2')?.displayId).toBe(
+      '└─ 1.2'
+    );
+    expect(simplifiedResult.find((t) => t.id === '1.2.1')?.displayId).toBe(
+      '   └─ 1.2.1'
+    ); // Indented under last child '1.2'
+    expect(simplifiedResult.find((t) => t.id === '2')?.displayId).toBe('2');
+    expect(simplifiedResult.find((t) => t.id === '3')?.displayId).toBe('3');
   });
 
   it('FR-LIST-010/011: should add correct status and priority emojis', () => {
@@ -187,25 +341,42 @@ describe('prepareDisplayTasks', () => {
     const simplifiedResult = result.map(simplifyDisplayTask);
 
     // Check emojis based on MOCK_TASKS data
-    expect(simplifiedResult.find(t => t.id === '1')?.statusEmoji).toBe('🟡'); // pending
-    expect(simplifiedResult.find(t => t.id === '1')?.priorityEmoji).toBe('🟡'); // medium
+    expect(simplifiedResult.find((t) => t.id === '1')?.statusEmoji).toBe('🟡'); // pending
+    expect(simplifiedResult.find((t) => t.id === '1')?.priorityEmoji).toBe(
+      '🟡'
+    ); // medium
 
-    expect(simplifiedResult.find(t => t.id === '1.1')?.statusEmoji).toBe('🟠'); // in-progress
-    expect(simplifiedResult.find(t => t.id === '1.1')?.priorityEmoji).toBe('🔴'); // high
+    expect(simplifiedResult.find((t) => t.id === '1.1')?.statusEmoji).toBe(
+      '🟠'
+    ); // in-progress
+    expect(simplifiedResult.find((t) => t.id === '1.1')?.priorityEmoji).toBe(
+      '🔴'
+    ); // high
 
-    expect(simplifiedResult.find(t => t.id === '1.2')?.statusEmoji).toBe('✅'); // done
-    expect(simplifiedResult.find(t => t.id === '1.2')?.priorityEmoji).toBe('🟢'); // low
+    expect(simplifiedResult.find((t) => t.id === '1.2')?.statusEmoji).toBe(
+      '✅'
+    ); // done
+    expect(simplifiedResult.find((t) => t.id === '1.2')?.priorityEmoji).toBe(
+      '🟢'
+    ); // low
 
-    expect(simplifiedResult.find(t => t.id === '1.2.1')?.statusEmoji).toBe('🟡'); // pending
-    expect(simplifiedResult.find(t => t.id === '1.2.1')?.priorityEmoji).toBe('🟡'); // medium
+    expect(simplifiedResult.find((t) => t.id === '1.2.1')?.statusEmoji).toBe(
+      '🟡'
+    ); // pending
+    expect(simplifiedResult.find((t) => t.id === '1.2.1')?.priorityEmoji).toBe(
+      '🟡'
+    ); // medium
 
-    expect(simplifiedResult.find(t => t.id === '2')?.statusEmoji).toBe('🟡'); // pending
-    expect(simplifiedResult.find(t => t.id === '2')?.priorityEmoji).toBe('🟡'); // medium
+    expect(simplifiedResult.find((t) => t.id === '2')?.statusEmoji).toBe('🟡'); // pending
+    expect(simplifiedResult.find((t) => t.id === '2')?.priorityEmoji).toBe(
+      '🟡'
+    ); // medium
 
-    expect(simplifiedResult.find(t => t.id === '3')?.statusEmoji).toBe('🟡'); // pending
-    expect(simplifiedResult.find(t => t.id === '3')?.priorityEmoji).toBe('🟡'); // medium
+    expect(simplifiedResult.find((t) => t.id === '3')?.statusEmoji).toBe('🟡'); // pending
+    expect(simplifiedResult.find((t) => t.id === '3')?.priorityEmoji).toBe(
+      '🟡'
+    ); // medium
   });
-
 
   it('EC-LIST-002: should handle an empty task list gracefully (prepareDisplayTasks)', () => {
     expect(prepareDisplayTasks([], false)).toEqual([]);
@@ -223,7 +394,7 @@ describe('prepareDisplayTasks', () => {
     // Let's test filtering for 'done'.
 
     // First, get the filtered list as `getListTasksLogic` would produce it
-    const filteredTasks = MOCK_TASKS.filter(t => t.status === 'done'); // Only task '1.2'
+    const filteredTasks = MOCK_TASKS.filter((t) => t.status === 'done'); // Only task '1.2'
 
     // Now, prepare display tasks with the filtered list
     const result = prepareDisplayTasks(filteredTasks, true);
@@ -232,20 +403,19 @@ describe('prepareDisplayTasks', () => {
     // Since only '1.2' remains after filtering, and its parent '1' was filtered out,
     // '1.2' should be treated as a root in the display.
     expect(simplifiedResult).toHaveLength(1);
-    expect(simplifiedResult[0]).toEqual(expect.objectContaining({
-      id: '1.2',
-      displayId: '1.2', // Treated as root because parent '1' was filtered out
-      depth: 0,
-      statusEmoji: '✅',
-      priorityEmoji: '🟢',
-    }));
+    expect(simplifiedResult[0]).toEqual(
+      expect.objectContaining({
+        id: '1.2',
+        displayId: '1.2', // Treated as root because parent '1' was filtered out
+        depth: 0,
+        statusEmoji: '✅',
+        priorityEmoji: '🟢',
+      })
+    );
   });
 
-
   // Add more tests here for other requirements...
-
 });
-
 
 // --- Tests for getListTasksLogic ---
 
@@ -293,8 +463,15 @@ describe('getListTasksLogic', () => {
     const result = await getListTasksLogic(taskManager, options);
 
     expect(mockGetAllTasks).toHaveBeenCalledTimes(1);
-    // Expected order by title: Orphan, Root 1, Root 2, Sub 1.1, Sub 1.2, Sub-sub 1.2.1
-    expect(result.map(t => t.id)).toEqual(['3', '1', '2', '1.1', '1.2', '1.2.1']);
+    // Expected order by title using localeCompare: Orphan, Root 1, Root 2, Sub-sub 1.2.1, Sub 1.1, Sub 1.2
+    expect(result.map((t) => t.id)).toEqual([
+      '3',
+      '1',
+      '2',
+      '1.2.1',
+      '1.1',
+      '1.2',
+    ]);
   });
 
   // Note: The current basic sort implementation might not handle priority correctly.
@@ -302,9 +479,9 @@ describe('getListTasksLogic', () => {
   // A more robust sort would map priorities to numerical values.
   it('FR-LIST-013: should sort tasks by priority when sortBy="priority" is provided (basic string sort)', async () => {
     const tasksWithDifferentPriorities: Task[] = [
-       { ...MOCK_TASKS[0], id: 'p-high', priority: 'high' },
-       { ...MOCK_TASKS[0], id: 'p-low', priority: 'low' },
-       { ...MOCK_TASKS[0], id: 'p-medium', priority: 'medium' },
+      { ...MOCK_TASKS[0], id: 'p-high', priority: 'high' },
+      { ...MOCK_TASKS[0], id: 'p-low', priority: 'low' },
+      { ...MOCK_TASKS[0], id: 'p-medium', priority: 'medium' },
     ];
     mockGetAllTasks.mockResolvedValue(tasksWithDifferentPriorities);
 
@@ -313,7 +490,7 @@ describe('getListTasksLogic', () => {
 
     expect(mockGetAllTasks).toHaveBeenCalledTimes(1);
     // Basic string sort order: high, low, medium
-    expect(result.map(t => t.id)).toEqual(['p-high', 'p-low', 'p-medium']);
+    expect(result.map((t) => t.id)).toEqual(['p-high', 'p-low', 'p-medium']);
     // TODO: If a custom priority sort order is implemented later, update this test.
     // Expected custom order: p-low, p-medium, p-high
   });
@@ -323,5 +500,4 @@ describe('getListTasksLogic', () => {
     const result = await getListTasksLogic(taskManager, {});
     expect(result).toEqual([]);
   });
-
 });

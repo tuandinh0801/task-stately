@@ -5,7 +5,6 @@ import { deleteTaskLogic } from './delete'; // Import the logic function
 // Mock TaskManager
 vi.mock('../../core/TaskManager');
 
-
 describe('deleteTaskLogic', () => {
   let taskManager: TaskManager;
   let mockDeleteTask: ReturnType<typeof vi.fn>;
@@ -47,7 +46,7 @@ describe('deleteTaskLogic', () => {
     mockDeleteTask.mockRejectedValue(error); // Simulate an unexpected error
 
     await expect(deleteTaskLogic(taskManager, taskId)).rejects.toThrow(
-      'Database connection failed',
+      'Database connection failed'
     );
     expect(mockDeleteTask).toHaveBeenCalledTimes(1);
     expect(mockDeleteTask).toHaveBeenCalledWith(taskId, false); // Expect cascade: false
@@ -65,10 +64,10 @@ describe('deleteTaskLogic', () => {
     expect(result).toBe(true);
   });
 
-   // Note: TaskNotFoundError is typically thrown by getTask, not deleteTask.
-   // deleteTask usually returns boolean. If it were to throw TaskNotFoundError,
-   // we could add a test like this:
-   /*
+  // Note: TaskNotFoundError is typically thrown by getTask, not deleteTask.
+  // deleteTask usually returns boolean. If it were to throw TaskNotFoundError,
+  // we could add a test like this:
+  /*
    it('should re-throw TaskNotFoundError if taskManager throws it', async () => {
      const taskId = 'task-not-found-exception';
      const error = new TaskNotFoundError(taskId);
@@ -79,7 +78,6 @@ describe('deleteTaskLogic', () => {
      expect(mockDeleteTask).toHaveBeenCalledWith(taskId);
    });
    */
-
 });
 
 // Keep the old describe block for command registration tests if needed,

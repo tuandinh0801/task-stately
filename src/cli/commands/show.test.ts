@@ -23,7 +23,7 @@ const createMockTask = (id: string, data: Partial<Task> = {}): Task => {
     acceptanceCriteria: [],
     complexity: 1,
     parentTaskId: null, // Added
-    childTaskIds: [],   // Added
+    childTaskIds: [], // Added
     // subtasks: [], // Removed
     artifacts: [],
     tags: [],
@@ -50,7 +50,10 @@ describe('getShowTaskLogic', () => {
 
   it('should call taskManager.getTask with the provided ID and return the task', async () => {
     const taskId = 'task-123';
-    const expectedTask = createMockTask(taskId, { parentTaskId: 'parent-0', childTaskIds: ['child-1', 'child-2'] }); // Add hierarchy data
+    const expectedTask = createMockTask(taskId, {
+      parentTaskId: 'parent-0',
+      childTaskIds: ['child-1', 'child-2'],
+    }); // Add hierarchy data
     mockGetTask.mockResolvedValue(expectedTask);
 
     const result = await getShowTaskLogic(taskManager, taskId);
@@ -67,8 +70,9 @@ describe('getShowTaskLogic', () => {
     const taskId = 'not-found-id';
     mockGetTask.mockResolvedValue(undefined); // Task not found
 
-    await expect(getShowTaskLogic(taskManager, taskId))
-      .rejects.toThrow(`Task with ID "${taskId}" not found.`);
+    await expect(getShowTaskLogic(taskManager, taskId)).rejects.toThrow(
+      `Task with ID "${taskId}" not found.`
+    );
 
     expect(mockGetTask).toHaveBeenCalledTimes(1);
     expect(mockGetTask).toHaveBeenCalledWith(taskId);
@@ -80,19 +84,21 @@ describe('getShowTaskLogic', () => {
     const mockError = new Error(errorMessage);
     mockGetTask.mockRejectedValue(mockError);
 
-    await expect(getShowTaskLogic(taskManager, taskId))
-      .rejects.toThrow(errorMessage);
+    await expect(getShowTaskLogic(taskManager, taskId)).rejects.toThrow(
+      errorMessage
+    );
 
     expect(mockGetTask).toHaveBeenCalledTimes(1);
     expect(mockGetTask).toHaveBeenCalledWith(taskId);
   });
 
   it('should throw an error if taskId is empty or whitespace', async () => {
-    await expect(getShowTaskLogic(taskManager, ''))
-      .rejects.toThrow('Task ID cannot be empty.');
-    await expect(getShowTaskLogic(taskManager, '   '))
-        .rejects.toThrow('Task ID cannot be empty.');
+    await expect(getShowTaskLogic(taskManager, '')).rejects.toThrow(
+      'Task ID cannot be empty.'
+    );
+    await expect(getShowTaskLogic(taskManager, '   ')).rejects.toThrow(
+      'Task ID cannot be empty.'
+    );
     expect(mockGetTask).not.toHaveBeenCalled();
   });
-
 });

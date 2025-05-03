@@ -1,4 +1,12 @@
-import { describe, it, expect, vi, beforeEach, MockInstance, Mocked } from 'vitest'; // Import MockInstance and Mocked
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeEach,
+  MockInstance,
+  Mocked,
+} from 'vitest'; // Import MockInstance and Mocked
 import { Command } from 'commander';
 import inquirer from 'inquirer';
 import { TaskManager } from '../../core/TaskManager';
@@ -20,9 +28,12 @@ vi.mock('inquirer');
 
 // Mock console
 const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
-const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-const mockProcessExit = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
-
+const mockConsoleError = vi
+  .spyOn(console, 'error')
+  .mockImplementation(() => {});
+const mockProcessExit = vi
+  .spyOn(process, 'exit')
+  .mockImplementation(() => undefined as never);
 
 // Helper to create a mock task
 const createMockTask = (id: string, data: Partial<Task> = {}): Task => {
@@ -47,7 +58,6 @@ const createMockTask = (id: string, data: Partial<Task> = {}): Task => {
     ...data,
   };
 };
-
 
 describe('addTaskLogic', () => {
   let taskManager: Mocked<TaskManager>; // Use Mocked type
@@ -75,18 +85,18 @@ describe('addTaskLogic', () => {
     };
     // Data expected to be passed to taskManager.createTask after logic processing
     const expectedCallData = {
-        title: 'New Test Task',
-        description: 'A description',
-        priority: TaskPrioritySchema.enum.high, // Expect validated enum
-        type: TaskTypeSchema.enum.feature,     // Expect validated enum
-        status: TaskStatusSchema.enum.pending, // Expect default status
-        tags: ['cli', 'test'],                 // Expect parsed array
-        acceptanceCriteria: [],                // Expect default
-        assignee: undefined,                   // Expect default
+      title: 'New Test Task',
+      description: 'A description',
+      priority: TaskPrioritySchema.enum.high, // Expect validated enum
+      type: TaskTypeSchema.enum.feature, // Expect validated enum
+      status: TaskStatusSchema.enum.pending, // Expect default status
+      tags: ['cli', 'test'], // Expect parsed array
+      acceptanceCriteria: [], // Expect default
+      assignee: undefined, // Expect default
     };
     // Mock task returned by createTask (can simplify structure for mock)
     const mockReturnedTask = createMockTask('new-id', {
-        ...expectedCallData, // Use the processed data for the mock return
+      ...expectedCallData, // Use the processed data for the mock return
     });
     mockCreateTask.mockResolvedValue(mockReturnedTask);
 
@@ -94,7 +104,9 @@ describe('addTaskLogic', () => {
 
     expect(mockCreateTask).toHaveBeenCalledTimes(1);
     // Verify the data passed to createTask matches the expected processed data
-    expect(mockCreateTask).toHaveBeenCalledWith(expect.objectContaining(expectedCallData));
+    expect(mockCreateTask).toHaveBeenCalledWith(
+      expect.objectContaining(expectedCallData)
+    );
     expect(result).toEqual(mockReturnedTask);
   });
 
@@ -102,45 +114,48 @@ describe('addTaskLogic', () => {
     const taskOptions: AddTaskOptions = {
       title: 'Minimal Task',
     };
-     // Data expected to be passed to taskManager.createTask after logic processing
-     const expectedCallData = {
-        title: 'Minimal Task',
-        description: undefined,
-        priority: TaskPrioritySchema.enum.medium, // Expect default priority
-        type: TaskTypeSchema.enum.feature,      // Expect default type
-        status: TaskStatusSchema.enum.pending,   // Expect default status
-        tags: [],                                // Expect default
-        acceptanceCriteria: [],                // Expect default
-        assignee: undefined,                   // Expect default
+    // Data expected to be passed to taskManager.createTask after logic processing
+    const expectedCallData = {
+      title: 'Minimal Task',
+      description: undefined,
+      priority: TaskPrioritySchema.enum.medium, // Expect default priority
+      type: TaskTypeSchema.enum.feature, // Expect default type
+      status: TaskStatusSchema.enum.pending, // Expect default status
+      tags: [], // Expect default
+      acceptanceCriteria: [], // Expect default
+      assignee: undefined, // Expect default
     };
     // Mock task returned by createTask
-    const mockReturnedTask = createMockTask('min-id', { title: 'Minimal Task' });
+    const mockReturnedTask = createMockTask('min-id', {
+      title: 'Minimal Task',
+    });
     mockCreateTask.mockResolvedValue(mockReturnedTask);
 
     const result = await addTaskLogic(taskManager, taskOptions);
 
     expect(mockCreateTask).toHaveBeenCalledTimes(1);
     // Verify the data passed to createTask matches the expected processed data with defaults
-    expect(mockCreateTask).toHaveBeenCalledWith(expect.objectContaining(expectedCallData));
+    expect(mockCreateTask).toHaveBeenCalledWith(
+      expect.objectContaining(expectedCallData)
+    );
     expect(result).toEqual(mockReturnedTask);
   });
 
-
   it('should throw an error if title is missing or empty', async () => {
     const invalidOptions: AddTaskOptions[] = [
-        { title: '' },
-        { title: '   ' },
-        {} as AddTaskOptions // Cast to bypass TS check for the test case
+      { title: '' },
+      { title: '   ' },
+      {} as AddTaskOptions, // Cast to bypass TS check for the test case
     ];
 
     for (const options of invalidOptions) {
-        await expect(addTaskLogic(taskManager, options))
-          .rejects.toThrow('Task title cannot be empty.');
+      await expect(addTaskLogic(taskManager, options)).rejects.toThrow(
+        'Task title cannot be empty.'
+      );
     }
 
     expect(mockCreateTask).not.toHaveBeenCalled();
   });
-
 
   it('should re-throw the error if taskManager.createTask throws', async () => {
     const taskOptions: AddTaskOptions = { title: 'Error Task' };
@@ -148,11 +163,14 @@ describe('addTaskLogic', () => {
     const mockError = new Error(errorMessage);
     mockCreateTask.mockRejectedValue(mockError);
 
-    await expect(addTaskLogic(taskManager, taskOptions))
-      .rejects.toThrow(errorMessage);
+    await expect(addTaskLogic(taskManager, taskOptions)).rejects.toThrow(
+      errorMessage
+    );
 
     expect(mockCreateTask).toHaveBeenCalledTimes(1);
-    expect(mockCreateTask).toHaveBeenCalledWith(expect.objectContaining({ title: 'Error Task' }));
+    expect(mockCreateTask).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Error Task' })
+    );
   });
 
   it('should handle tags string with extra spaces', async () => {
@@ -162,20 +180,22 @@ describe('addTaskLogic', () => {
     };
     // Data expected to be passed to taskManager.createTask after logic processing
     const expectedCallData = {
-        title: 'Tags Test',
-        priority: TaskPrioritySchema.enum.medium, // Expect default
-        type: TaskTypeSchema.enum.feature,      // Expect default
-        status: TaskStatusSchema.enum.pending,   // Expect default
-        tags: ['tag1', 'tag2', 'tag3'],          // Expect parsed and trimmed tags
-        acceptanceCriteria: [],                // Expect default
-        assignee: undefined,                   // Expect default
+      title: 'Tags Test',
+      priority: TaskPrioritySchema.enum.medium, // Expect default
+      type: TaskTypeSchema.enum.feature, // Expect default
+      status: TaskStatusSchema.enum.pending, // Expect default
+      tags: ['tag1', 'tag2', 'tag3'], // Expect parsed and trimmed tags
+      acceptanceCriteria: [], // Expect default
+      assignee: undefined, // Expect default
     };
     const mockReturnedTask = createMockTask('tags-id', { ...expectedCallData });
     mockCreateTask.mockResolvedValue(mockReturnedTask);
 
     await addTaskLogic(taskManager, taskOptions);
 
-    expect(mockCreateTask).toHaveBeenCalledWith(expect.objectContaining(expectedCallData));
+    expect(mockCreateTask).toHaveBeenCalledWith(
+      expect.objectContaining(expectedCallData)
+    );
   });
 
   it('should call taskManager.createTask with parentId if provided', async () => {
@@ -184,26 +204,28 @@ describe('addTaskLogic', () => {
       parentId: 'parent-123', // Provide parentId
     };
     const expectedCallData = {
-        title: 'Child Task',
-        priority: TaskPrioritySchema.enum.medium, // Default
-        type: TaskTypeSchema.enum.feature,      // Default
-        status: TaskStatusSchema.enum.pending,   // Default
-        tags: [],                                // Default
-        acceptanceCriteria: [],                // Default
-        assignee: undefined,                   // Default
-        parentTaskId: 'parent-123',            // Expect parentId to be passed
+      title: 'Child Task',
+      priority: TaskPrioritySchema.enum.medium, // Default
+      type: TaskTypeSchema.enum.feature, // Default
+      status: TaskStatusSchema.enum.pending, // Default
+      tags: [], // Default
+      acceptanceCriteria: [], // Default
+      assignee: undefined, // Default
+      parentTaskId: 'parent-123', // Expect parentId to be passed
     };
-    const mockReturnedTask = createMockTask('child-id', { ...expectedCallData });
+    const mockReturnedTask = createMockTask('child-id', {
+      ...expectedCallData,
+    });
     mockCreateTask.mockResolvedValue(mockReturnedTask);
 
     await addTaskLogic(taskManager, taskOptions);
 
     expect(mockCreateTask).toHaveBeenCalledTimes(1);
-    expect(mockCreateTask).toHaveBeenCalledWith(expect.objectContaining(expectedCallData));
+    expect(mockCreateTask).toHaveBeenCalledWith(
+      expect.objectContaining(expectedCallData)
+    );
   });
-
 });
-
 
 // --- Tests for registerAddCommand and interactive flow ---
 describe('registerAddCommand action handler (interactive)', () => {
@@ -236,8 +258,8 @@ describe('registerAddCommand action handler (interactive)', () => {
       title: 'Interactive Task',
       description: 'Interactive Desc',
       priority: TaskPrioritySchema.enum.high, // Use Zod enum value
-      type: TaskTypeSchema.enum.bug,         // Use Zod enum value
-      status: TaskStatusSchema.enum.pending,   // Use Zod enum value
+      type: TaskTypeSchema.enum.bug, // Use Zod enum value
+      status: TaskStatusSchema.enum.pending, // Use Zod enum value
       tags: 'tagA, tagB',
       criteria: 'crit1, crit2',
       assignee: 'tester',
@@ -245,7 +267,9 @@ describe('registerAddCommand action handler (interactive)', () => {
     };
     vi.mocked(inquirer.prompt).mockResolvedValue(mockAnswers);
 
-    const mockCreatedTask = createMockTask('interactive-1', { title: 'Interactive Task' });
+    const mockCreatedTask = createMockTask('interactive-1', {
+      title: 'Interactive Task',
+    });
     taskManager.createTask.mockResolvedValue(mockCreatedTask); // Mock the underlying storage call
 
     // Simulate running the command: node yourCli.js add --interactive
@@ -274,16 +298,20 @@ describe('registerAddCommand action handler (interactive)', () => {
       title: 'Interactive Task',
       description: 'Interactive Desc',
       priority: TaskPrioritySchema.enum.high, // Use Zod enum value
-      type: TaskTypeSchema.enum.bug,         // Use Zod enum value
-      status: TaskStatusSchema.enum.pending,   // Use Zod enum value
+      type: TaskTypeSchema.enum.bug, // Use Zod enum value
+      status: TaskStatusSchema.enum.pending, // Use Zod enum value
       tags: ['tagA', 'tagB'], // Expect parsed array
       acceptanceCriteria: ['crit1', 'crit2'], // Expect parsed array
       assignee: 'tester',
     });
 
     // Check for success message
-    expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('created successfully'));
-    expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('created successfully'));
+    expect(mockConsoleLog).toHaveBeenCalledWith(
+      expect.stringContaining('created successfully')
+    );
+    expect(mockConsoleLog).toHaveBeenCalledWith(
+      expect.stringContaining('created successfully')
+    );
     expect(mockConsoleError).not.toHaveBeenCalled();
   });
 
@@ -315,8 +343,12 @@ describe('registerAddCommand action handler (interactive)', () => {
     // Assertions
     expect(inquirer.prompt).toHaveBeenCalledTimes(1);
     expect(taskManager.createTask).not.toHaveBeenCalled();
-    expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('Error adding task: Inquirer failed'));
-    expect(mockConsoleLog).not.toHaveBeenCalledWith(expect.stringContaining('created successfully'));
+    expect(mockConsoleError).toHaveBeenCalledWith(
+      expect.stringContaining('Error adding task: Inquirer failed')
+    );
+    expect(mockConsoleLog).not.toHaveBeenCalledWith(
+      expect.stringContaining('created successfully')
+    );
     // Check if exit code was set (optional, depends on exact implementation)
     // expect(mockProcessExit).toHaveBeenCalledWith(1);
   });
@@ -344,8 +376,13 @@ describe('registerAddCommand action handler (interactive)', () => {
     // Assertions
     expect(inquirer.prompt).toHaveBeenCalledTimes(1);
     expect(taskManager.createTask).toHaveBeenCalledTimes(1); // Logic was called
-    expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('Error adding task: Failed to save task to storage'));
-    expect(mockConsoleLog).not.toHaveBeenCalledWith(expect.stringContaining('created successfully'));
+    expect(mockConsoleError).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'Error adding task: Failed to save task to storage'
+      )
+    );
+    expect(mockConsoleLog).not.toHaveBeenCalledWith(
+      expect.stringContaining('created successfully')
+    );
   });
-
 });

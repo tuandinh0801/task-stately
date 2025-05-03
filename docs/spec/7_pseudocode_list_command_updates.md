@@ -231,21 +231,21 @@ ENDFUNCTION
 2.  **`DisplayTask` Interface:** Added a new interface to represent the data structure passed to the `TaskList` component, including calculated `depth`, `isLastChild`, formatted `displayId`, and `statusEmoji`/`priorityEmoji`.
 3.  **`getListTasksLogic`:** Now primarily fetches and applies initial filters/sorts. Hierarchy filtering is deferred.
 4.  **`prepareDisplayTasks` (New Helper):**
-    *   Takes the flat task list, `withSubtasks` flag, and `sortBy` option.
-    *   Builds an in-memory tree to understand relationships.
-    *   Sorts siblings based on `sortBy` or a default stable sort.
-    *   If `withSubtasks` is true, traverses the tree to create a flat `DisplayTask[]` list in the correct hierarchical order, calculating depth, `isLastChild`, `displayId` (with indentation/branch), and emojis.
-    *   If `withSubtasks` is false, maps only the root tasks to `DisplayTask[]` without hierarchy info.
+    - Takes the flat task list, `withSubtasks` flag, and `sortBy` option.
+    - Builds an in-memory tree to understand relationships.
+    - Sorts siblings based on `sortBy` or a default stable sort.
+    - If `withSubtasks` is true, traverses the tree to create a flat `DisplayTask[]` list in the correct hierarchical order, calculating depth, `isLastChild`, `displayId` (with indentation/branch), and emojis.
+    - If `withSubtasks` is false, maps only the root tasks to `DisplayTask[]` without hierarchy info.
 5.  **`listAction`:**
-    *   Calls `getListTasksLogic` to get initially filtered/sorted tasks.
-    *   Calls `prepareDisplayTasks` to get the final list ready for rendering.
-    *   Passes the resulting `DisplayTask[]` to the `TaskList` component. The `isTree` prop is no longer needed.
+    - Calls `getListTasksLogic` to get initially filtered/sorted tasks.
+    - Calls `prepareDisplayTasks` to get the final list ready for rendering.
+    - Passes the resulting `DisplayTask[]` to the `TaskList` component. The `isTree` prop is no longer needed.
 6.  **`registerListCommand`:**
-    *   Removed the `--tree` option definition.
-    *   Added the `-w, --with-subtasks` option definition.
-    *   Updated the command description.
+    - Removed the `--tree` option definition.
+    - Added the `-w, --with-subtasks` option definition.
+    - Updated the command description.
 7.  **Constants:** Added constants for emojis, indentation, and branch characters.
 
 ## 4. Next Steps
 
--   Create pseudocode for the `TaskList` component (`docs/spec/8_pseudocode_tasklist_component_updates.md`) to handle rendering the `DisplayTask[]` data, including the formatted ID and emojis.
+- Create pseudocode for the `TaskList` component (`docs/spec/8_pseudocode_tasklist_component_updates.md`) to handle rendering the `DisplayTask[]` data, including the formatted ID and emojis.

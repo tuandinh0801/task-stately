@@ -14,7 +14,13 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
   const [width, height] = useStdoutDimensions();
 
   return (
-    <Box flexDirection="column" padding={1} borderStyle="round" borderColor="green" width={width - 20}>
+    <Box
+      flexDirection="column"
+      padding={1}
+      borderStyle="round"
+      borderColor="green"
+      width={width - 20}
+    >
       {/* Header Section */}
       <Box marginBottom={1} alignItems="center">
         <Text bold>ID: {task.id}</Text>
@@ -44,10 +50,10 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task }) => {
           <Text bold>Complexity: </Text>
           <Text>{task.complexity || 'N/A'}</Text>
         </Box>
-         <Box width="50%">
-           <Text bold>Assignee: </Text>
-           <Text>{task.assignee || 'N/A'}</Text>
-         </Box>
+        <Box width="50%">
+          <Text bold>Assignee: </Text>
+          <Text>{task.assignee || 'N/A'}</Text>
+        </Box>
       </Box>
 
       {/* Hierarchical Task Info */}

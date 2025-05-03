@@ -1,9 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TaskManager } from '../../core/TaskManager';
-import {
-  addDependencyLogic,
-  removeDependencyLogic,
-} from './dependency'; // Import the logic functions (will fail initially)
+import { addDependencyLogic, removeDependencyLogic } from './dependency'; // Import the logic functions (will fail initially)
 import { TaskNotFoundError } from '@/types/task';
 
 // Mock TaskManager
@@ -44,7 +41,7 @@ describe('addDependencyLogic', () => {
     expect(mockAddTaskDependency).toHaveBeenCalledTimes(1);
   });
 
-   it('should throw an error if taskManager throws an unexpected error', async () => {
+  it('should throw an error if taskManager throws an unexpected error', async () => {
     const taskId = 'task-err';
     const dependencyId = 'task-dep-err';
     const error = new Error('Storage error');
@@ -82,7 +79,7 @@ describe('removeDependencyLogic', () => {
     // No result check needed as it returns void on success
   });
 
-   it('should throw TaskNotFoundError if taskManager throws it for non-existent task', async () => {
+  it('should throw TaskNotFoundError if taskManager throws it for non-existent task', async () => {
     const taskId = 'task-3';
     const dependencyId = 'non-existent-dep';
     const error = new TaskNotFoundError(taskId); // Simulate task not found
@@ -97,21 +94,24 @@ describe('removeDependencyLogic', () => {
   });
 
   // Add a test case if removeTaskDependency specifically throws for non-existent dependency
-   it('should throw an error if taskManager throws for non-existent dependency', async () => {
+  it('should throw an error if taskManager throws for non-existent dependency', async () => {
     const taskId = 'task-4';
     const dependencyId = 'non-existent-dep-id';
     // Simulate removeTaskDependency throwing a generic error for missing dependency
-    const error = new Error(`Dependency "${dependencyId}" not found on task "${taskId}".`);
+    const error = new Error(
+      `Dependency "${dependencyId}" not found on task "${taskId}".`
+    );
     mockRemoveTaskDependency.mockRejectedValue(error);
 
-     await expect(
+    await expect(
       removeDependencyLogic(taskManager, taskId, dependencyId)
-    ).rejects.toThrow(`Dependency "${dependencyId}" not found on task "${taskId}".`);
+    ).rejects.toThrow(
+      `Dependency "${dependencyId}" not found on task "${taskId}".`
+    );
 
     expect(mockRemoveTaskDependency).toHaveBeenCalledTimes(1);
     expect(mockRemoveTaskDependency).toHaveBeenCalledWith(taskId, dependencyId);
   });
-
 
   it('should re-throw TaskNotFoundError if taskManager throws it (general case)', async () => {
     const taskId = 'task-not-found-remove';
@@ -125,7 +125,7 @@ describe('removeDependencyLogic', () => {
     expect(mockRemoveTaskDependency).toHaveBeenCalledTimes(1);
   });
 
-   it('should throw an error if taskManager throws an unexpected error', async () => {
+  it('should throw an error if taskManager throws an unexpected error', async () => {
     const taskId = 'task-err-remove';
     const dependencyId = 'task-dep-err-remove';
     const error = new Error('Connection failed');

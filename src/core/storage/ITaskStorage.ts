@@ -26,7 +26,6 @@ export type UpdateTaskData = Partial<Omit<Task, 'id' | 'createdAt'>>; // Removed
 
 // Removed NewSubtaskData and UpdateSubtaskData
 
-
 export interface ITaskStorage {
   /**
    * Optional initialization logic (e.g., ensure directory exists).

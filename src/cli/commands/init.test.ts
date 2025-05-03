@@ -6,7 +6,6 @@ import { registerInitCommand, initLogic } from './init'; // Import the logic fun
 // Mock TaskManager
 vi.mock('../../core/TaskManager');
 
-
 describe('initLogic', () => {
   let taskManager: TaskManager;
   let mockGetAllTasks: ReturnType<typeof vi.fn>;
@@ -33,12 +32,11 @@ describe('initLogic', () => {
     mockGetAllTasks.mockRejectedValue(error); // Simulate an error during initialization
 
     await expect(initLogic(taskManager)).rejects.toThrow(
-      'Failed to initialize storage',
+      'Failed to initialize storage'
     );
     expect(mockGetAllTasks).toHaveBeenCalledTimes(1);
   });
 });
-
 
 // Keep the old describe block for command registration tests if needed,
 // or remove it if focusing solely on logic tests now.

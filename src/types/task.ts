@@ -16,11 +16,11 @@ export type TaskPriority = z.infer<typeof TaskPrioritySchema>;
 
 // Ensure TaskTypeSchema includes desired hierarchical levels
 export const TaskTypeSchema = z.enum([
-  'epic',      // High-level initiative
-  'feature',   // Distinct part of functionality
-  'task',      // Specific piece of work
-  'bug',       // Defect correction
-  'chore',     // Maintenance or operational work
+  'epic', // High-level initiative
+  'feature', // Distinct part of functionality
+  'task', // Specific piece of work
+  'bug', // Defect correction
+  'chore', // Maintenance or operational work
   'refactor',
   'docs',
   'test',
@@ -29,56 +29,74 @@ export const TaskTypeSchema = z.enum([
 ]);
 export type TaskType = z.infer<typeof TaskTypeSchema>;
 
-// Unified Task Schema
-export const TaskSchema = z.object({
-  // --- Core Identification ---
-  id: z.string(), // Unique identifier (e.g., UUID or sequential string "1", "2")
+// --- Recursive Schemas ---
+
+// Base schema for task data used in creation, excluding recursive children
+const BaseNewTaskDataSchema = z.object({
   title: z.string().min(1, 'Title cannot be empty'),
   description: z.string().optional(),
+  status: TaskStatusSchema.optional(), // Made optional for creation, defaults handled later
+  priority: TaskPrioritySchema.optional(),
+  type: TaskTypeSchema.optional(),
+  complexity: z.number().int().min(1).max(10).optional(),
+  tags: z.array(z.string()).optional(),
+  dependencies: z.array(z.string()).optional(),
+  acceptanceCriteria: z.array(z.string()).optional(),
+  artifacts: z.array(z.string()).optional(),
+  assignee: z.string().optional(),
+  parentTaskId: z.string().optional().nullable(), // Can be provided during creation
+});
 
-  // --- Classification & Status ---
+// Define the structure for an inline child task during creation
+// It needs a tempId and its own taskData (which could have further children)
+export type InlineChildInput = {
+  tempId: string;
+  taskData: z.infer<typeof LazyNewTaskDataSchema>; // Use the lazy schema here
+};
+
+export const InlineChildInputSchema: z.ZodType<InlineChildInput> = z.lazy(() =>
+  z.object({
+    tempId: z.string().min(1),
+    taskData: LazyNewTaskDataSchema, // Recursive reference
+  })
+);
+
+// Lazy schema for NewTaskData including the recursive children definition
+const LazyNewTaskDataSchema = BaseNewTaskDataSchema.extend({
+  children: z.array(InlineChildInputSchema).optional(),
+});
+
+// Final exported schema and type for creating new tasks
+export const NewTaskDataSchema = LazyNewTaskDataSchema;
+export type NewTaskData = z.infer<typeof NewTaskDataSchema>;
+
+// --- Main Task Schema ---
+
+// Define the main Task schema using the final NewTaskData parts
+export const TaskSchema = BaseNewTaskDataSchema.extend({
+  // --- Core Identification ---
+  id: z.string(), // Unique identifier
+
+  // --- Classification & Status (with defaults) ---
   status: TaskStatusSchema.default('pending'),
   priority: TaskPrioritySchema.default('medium'),
-  type: TaskTypeSchema.default('task'), // Default to 'task', can be set to 'epic', 'feature', etc.
-  complexity: z.number().int().min(1).max(10).optional(), // Scale 1-10
+  type: TaskTypeSchema.default('task'),
   tags: z.array(z.string()).default([]),
 
-  // --- Relationships ---
-  parentTaskId: z.string().optional().nullable(), // ID of the parent task, null if top-level
+  // --- Relationships (with defaults) ---
+  // parentTaskId is already in BaseNewTaskDataSchema
   childTaskIds: z.array(z.string()).default([]), // IDs of direct child tasks
-  dependencies: z.array(z.string()).default([]), // IDs of tasks this task depends on (blocks)
+  dependencies: z.array(z.string()).default([]), // IDs of tasks this task depends on
+  acceptanceCriteria: z.array(z.string()).default([]),
+  artifacts: z.array(z.string()).default([]),
 
   // --- Details & Metadata ---
-  acceptanceCriteria: z.array(z.string()).default([]),
-  artifacts: z.array(z.string()).default([]), // e.g., links to designs, PRs
-  assignee: z.string().optional(), // User ID or name
   createdAt: z.string().datetime(), // ISO 8601 format
   updatedAt: z.string().datetime(), // ISO 8601 format
 });
 export type Task = z.infer<typeof TaskSchema>;
 
 // --- Supporting Types ---
-
-// Schema for data used when creating a new task (subset of Task)
-// Note: id, createdAt, updatedAt, childTaskIds are usually set by the system
-export const NewTaskDataSchema = TaskSchema.omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  childTaskIds: true, // Children are added via separate operations
-}).partial({
-  // Make fields optional where appropriate for creation
-  status: true,
-  priority: true,
-  type: true,
-  dependencies: true,
-  acceptanceCriteria: true,
-  artifacts: true,
-  tags: true,
-  parentTaskId: true, // parentTaskId can be provided during creation
-});
-export type NewTaskData = z.infer<typeof NewTaskDataSchema>;
-
 
 // Schema for data used when updating a task (all fields optional)
 export const UpdateTaskDataSchema = TaskSchema.partial().omit({
@@ -117,3 +135,8 @@ export type TaskTreeNode = Task & {
 
 // Note: Removed the problematic TaskTreeNodeSchema definition.
 // The buildTaskTree function will construct objects matching TaskTreeNode type.
+
+// Schema for inline child creation (re-used from addTask)
+// Omitting parentTaskId as it will be determined during execution
+// This is now effectively covered by InlineChildInputSchema and NewTaskDataSchema
+// export const InlineChildTaskDataSchema = NewTaskDataSchema.omit({ parentTaskId: true });

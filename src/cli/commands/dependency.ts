@@ -29,12 +29,12 @@ export async function removeDependencyLogic(
   taskManager: TaskManager,
   taskId: string,
   dependencyId: string
-): Promise<void> { // Return void on success
-   // Let TaskManager handle TaskNotFoundError etc.
+): Promise<void> {
+  // Return void on success
+  // Let TaskManager handle TaskNotFoundError etc.
   await taskManager.removeTaskDependency(taskId, dependencyId);
   // No return needed, success is indicated by not throwing
 }
-
 
 // --- Command Registration ---
 
@@ -45,7 +45,7 @@ export async function removeDependencyLogic(
  */
 export async function registerDependencyCommand(
   program: Command,
-  taskManager: TaskManager,
+  taskManager: TaskManager
 ): Promise<void> {
   const depCmd = program
     .command('dependency')
@@ -57,10 +57,7 @@ export async function registerDependencyCommand(
     .command('add')
     .description('Add a dependency to a task (task depends on dependency)')
     .argument('<taskId>', 'ID of the task that will depend on another')
-    .argument(
-      '<dependencyId>',
-      'ID of the task that must be completed first',
-    )
+    .argument('<dependencyId>', 'ID of the task that must be completed first')
     .action(async (taskId: string, dependencyId: string) => {
       try {
         // Call extracted logic
@@ -69,16 +66,16 @@ export async function registerDependencyCommand(
         render(
           React.createElement(SuccessMessage, {
             message: `Dependency ${dependencyId} added to task ${taskId} successfully.`,
-          }),
+          })
         );
       } catch (error: any) {
         // Render error (UI concern)
-         let errorMessage = 'Failed to add dependency.';
-         if (error instanceof TaskNotFoundError || error instanceof Error) {
-             errorMessage = error.message;
-         } else {
-             errorMessage = String(error);
-         }
+        let errorMessage = 'Failed to add dependency.';
+        if (error instanceof TaskNotFoundError || error instanceof Error) {
+          errorMessage = error.message;
+        } else {
+          errorMessage = String(error);
+        }
         render(React.createElement(ErrorDisplay, { error: errorMessage }));
         process.exitCode = 1;
       }
@@ -93,23 +90,23 @@ export async function registerDependencyCommand(
     .argument('<dependencyId>', 'ID of the dependency task to remove')
     .action(async (taskId: string, dependencyId: string) => {
       try {
-         // Call extracted logic (returns void on success, throws on error)
+        // Call extracted logic (returns void on success, throws on error)
         await removeDependencyLogic(taskManager, taskId, dependencyId);
 
         // If removeDependencyLogic completes without throwing, it was successful.
         render(
           React.createElement(SuccessMessage, {
             message: `Dependency ${dependencyId} removed from task ${taskId} successfully.`,
-          }),
+          })
         );
       } catch (error: any) {
         // Handle errors thrown by logic (e.g., TaskNotFound or if dependency didn't exist)
-         let errorMessage = 'Failed to remove dependency.';
-         if (error instanceof TaskNotFoundError || error instanceof Error) {
-             errorMessage = error.message;
-         } else {
-             errorMessage = String(error);
-         }
+        let errorMessage = 'Failed to remove dependency.';
+        if (error instanceof TaskNotFoundError || error instanceof Error) {
+          errorMessage = error.message;
+        } else {
+          errorMessage = String(error);
+        }
         render(React.createElement(ErrorDisplay, { error: errorMessage }));
         process.exitCode = 1;
       }

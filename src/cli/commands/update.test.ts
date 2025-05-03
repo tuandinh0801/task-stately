@@ -22,8 +22,12 @@ vi.mock('inquirer');
 
 // Mock console
 const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
-const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-const mockProcessExit = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+const mockConsoleError = vi
+  .spyOn(console, 'error')
+  .mockImplementation(() => {});
+const mockProcessExit = vi
+  .spyOn(process, 'exit')
+  .mockImplementation(() => undefined as never);
 
 // Helper to create a mock task (updated for hierarchy)
 const createMockTask = (id: string, data: Partial<Task> = {}): Task => {
@@ -41,7 +45,7 @@ const createMockTask = (id: string, data: Partial<Task> = {}): Task => {
     acceptanceCriteria: [],
     complexity: 1,
     parentTaskId: null, // Added
-    childTaskIds: [],   // Added
+    childTaskIds: [], // Added
     // subtasks: [], // Removed
     artifacts: [],
     tags: [],
@@ -49,7 +53,8 @@ const createMockTask = (id: string, data: Partial<Task> = {}): Task => {
   };
 };
 
-describe('updateTaskLogic', () => { // Tests for the pure logic function
+describe('updateTaskLogic', () => {
+  // Tests for the pure logic function
   let taskManager: Mocked<TaskManager>;
   // Remove mockUpdateTask variable
 
@@ -90,7 +95,10 @@ describe('updateTaskLogic', () => { // Tests for the pure logic function
     const result = await updateTaskLogic(taskManager, taskId, options);
 
     expect(taskManager.updateTask).toHaveBeenCalledTimes(1); // Use taskManager.updateTask directly
-    expect(taskManager.updateTask).toHaveBeenCalledWith(taskId, expectedUpdateData); // Use taskManager.updateTask directly
+    expect(taskManager.updateTask).toHaveBeenCalledWith(
+      taskId,
+      expectedUpdateData
+    ); // Use taskManager.updateTask directly
     expect(result).toEqual(mockReturnedTask);
   });
 
@@ -109,7 +117,10 @@ describe('updateTaskLogic', () => { // Tests for the pure logic function
     const result = await updateTaskLogic(taskManager, taskId, options);
 
     expect(taskManager.updateTask).toHaveBeenCalledTimes(1); // Use taskManager.updateTask directly
-    expect(taskManager.updateTask).toHaveBeenCalledWith(taskId, expectedUpdateData); // Use taskManager.updateTask directly
+    expect(taskManager.updateTask).toHaveBeenCalledWith(
+      taskId,
+      expectedUpdateData
+    ); // Use taskManager.updateTask directly
     expect(result).toEqual(mockReturnedTask);
   });
 
@@ -143,13 +154,13 @@ describe('updateTaskLogic', () => { // Tests for the pure logic function
     const options = { priority: 'invalid-priority' };
 
     await expect(updateTaskLogic(taskManager, taskId, options)).rejects.toThrow(
-       // Zod error message might vary slightly, check for core part
+      // Zod error message might vary slightly, check for core part
       /Invalid enum value.*priority/
     );
     expect(taskManager.updateTask).not.toHaveBeenCalled(); // Use taskManager.updateTask directly
   });
 
-   it('should throw an error for invalid status', async () => {
+  it('should throw an error for invalid status', async () => {
     const taskId = 'task-def';
     const options = { status: 'invalid-status' };
 
@@ -159,7 +170,7 @@ describe('updateTaskLogic', () => { // Tests for the pure logic function
     expect(taskManager.updateTask).not.toHaveBeenCalled(); // Use taskManager.updateTask directly
   });
 
-   it('should throw an error for invalid type', async () => {
+  it('should throw an error for invalid type', async () => {
     const taskId = 'task-ghi';
     const options = { type: 'invalid-type' };
 
@@ -169,7 +180,6 @@ describe('updateTaskLogic', () => { // Tests for the pure logic function
     expect(taskManager.updateTask).not.toHaveBeenCalled(); // Use taskManager.updateTask directly
   });
 
-
   it('should re-throw TaskNotFoundError if taskManager throws it', async () => {
     const taskId = 'non-existent-task';
     const options = { title: 'New Title' };
@@ -177,10 +187,12 @@ describe('updateTaskLogic', () => { // Tests for the pure logic function
     taskManager.updateTask.mockRejectedValue(error); // Corrected reference
 
     await expect(updateTaskLogic(taskManager, taskId, options)).rejects.toThrow(
-      TaskNotFoundError,
+      TaskNotFoundError
     );
     expect(taskManager.updateTask).toHaveBeenCalledTimes(1); // Use taskManager.updateTask directly
-    expect(taskManager.updateTask).toHaveBeenCalledWith(taskId, { title: 'New Title' }); // Use taskManager.updateTask directly
+    expect(taskManager.updateTask).toHaveBeenCalledWith(taskId, {
+      title: 'New Title',
+    }); // Use taskManager.updateTask directly
   });
 
   it('should throw a generic error if taskManager throws an unknown error', async () => {
@@ -190,10 +202,12 @@ describe('updateTaskLogic', () => { // Tests for the pure logic function
     taskManager.updateTask.mockRejectedValue(error); // Corrected reference
 
     await expect(updateTaskLogic(taskManager, taskId, options)).rejects.toThrow(
-      'Something went wrong',
+      'Something went wrong'
     );
     expect(taskManager.updateTask).toHaveBeenCalledTimes(1); // Use taskManager.updateTask directly
-    expect(taskManager.updateTask).toHaveBeenCalledWith(taskId, { title: 'Another Title' }); // Use taskManager.updateTask directly
+    expect(taskManager.updateTask).toHaveBeenCalledWith(taskId, {
+      title: 'Another Title',
+    }); // Use taskManager.updateTask directly
   });
 
   it('should call taskManager.updateTask with parentId if provided', async () => {
@@ -211,39 +225,45 @@ describe('updateTaskLogic', () => { // Tests for the pure logic function
     const result = await updateTaskLogic(taskManager, taskId, options);
 
     expect(taskManager.updateTask).toHaveBeenCalledTimes(1);
-    expect(taskManager.updateTask).toHaveBeenCalledWith(taskId, expectedUpdateData);
+    expect(taskManager.updateTask).toHaveBeenCalledWith(
+      taskId,
+      expectedUpdateData
+    );
     expect(result).toEqual(mockReturnedTask);
   });
 
   it('should call taskManager.updateTask with parentId set to null if provided as "null" or empty string', async () => {
     const taskId = 'task-orphan-update';
     const testCases = [
-        { inputParentId: 'null', expectedParentTaskId: null },
-        { inputParentId: '', expectedParentTaskId: null },
-        // { inputParentId: undefined, expectedParentTaskId: undefined }, // This case means no change, tested elsewhere
+      { inputParentId: 'null', expectedParentTaskId: null },
+      { inputParentId: '', expectedParentTaskId: null },
+      // { inputParentId: undefined, expectedParentTaskId: undefined }, // This case means no change, tested elsewhere
     ];
 
     for (const { inputParentId, expectedParentTaskId } of testCases) {
-        taskManager.updateTask.mockClear(); // Clear mock for each case
-        const options = { parentId: inputParentId };
-        const expectedUpdateData: UpdateTaskData = {
-            parentTaskId: expectedParentTaskId,
-        };
-        const mockReturnedTask = createMockTask(taskId, { parentTaskId: expectedParentTaskId }); // Simulate the result
-        taskManager.updateTask.mockResolvedValue(mockReturnedTask);
+      taskManager.updateTask.mockClear(); // Clear mock for each case
+      const options = { parentId: inputParentId };
+      const expectedUpdateData: UpdateTaskData = {
+        parentTaskId: expectedParentTaskId,
+      };
+      const mockReturnedTask = createMockTask(taskId, {
+        parentTaskId: expectedParentTaskId,
+      }); // Simulate the result
+      taskManager.updateTask.mockResolvedValue(mockReturnedTask);
 
-        await updateTaskLogic(taskManager, taskId, options);
+      await updateTaskLogic(taskManager, taskId, options);
 
-        expect(taskManager.updateTask).toHaveBeenCalledWith(taskId, expectedUpdateData);
+      expect(taskManager.updateTask).toHaveBeenCalledWith(
+        taskId,
+        expectedUpdateData
+      );
     }
   });
-
 });
 
 // Keep the old describe block for command registration tests if needed,
 // or remove it if focusing solely on logic tests now.
 // describe('registerUpdateCommand', () => { ... }); // Keep or remove old command registration tests
-
 
 // --- Tests for registerUpdateCommand and interactive flow ---
 describe('registerUpdateCommand action handler (interactive)', () => {
@@ -294,9 +314,9 @@ describe('registerUpdateCommand action handler (interactive)', () => {
     };
 
     const mockUpdatedTask = createMockTask(taskId, {
-        ...existingTask,
-        ...expectedChanges,
-        updatedAt: new Date().toISOString(), // Simulate update timestamp
+      ...existingTask,
+      ...expectedChanges,
+      updatedAt: new Date().toISOString(), // Simulate update timestamp
     });
 
     // Mock implementations
@@ -305,7 +325,13 @@ describe('registerUpdateCommand action handler (interactive)', () => {
     taskManager.updateTask.mockResolvedValue(mockUpdatedTask);
 
     // Simulate running the command: node yourCli.js update update-me-1 --interactive
-    await program.parseAsync(['node', 'test', 'update', taskId, '--interactive']);
+    await program.parseAsync([
+      'node',
+      'test',
+      'update',
+      taskId,
+      '--interactive',
+    ]);
 
     // Assertions
     expect(taskManager.getTask).toHaveBeenCalledTimes(1);
@@ -316,8 +342,14 @@ describe('registerUpdateCommand action handler (interactive)', () => {
     expect(inquirer.prompt).toHaveBeenCalledWith(
       expect.arrayContaining([
         expect.objectContaining({ name: 'title', default: 'Original Title' }),
-        expect.objectContaining({ name: 'description', default: 'Original Desc' }),
-        expect.objectContaining({ name: 'priority', default: TaskPrioritySchema.enum.medium }),
+        expect.objectContaining({
+          name: 'description',
+          default: 'Original Desc',
+        }),
+        expect.objectContaining({
+          name: 'priority',
+          default: TaskPrioritySchema.enum.medium,
+        }),
         expect.objectContaining({ name: 'tags', default: 'old-tag' }), // Check default formatting
         expect.objectContaining({ name: 'assignee', default: 'old-assignee' }),
       ])
@@ -325,10 +357,15 @@ describe('registerUpdateCommand action handler (interactive)', () => {
 
     // Check if updateTaskLogic was called with only the changed data
     expect(taskManager.updateTask).toHaveBeenCalledTimes(1);
-    expect(taskManager.updateTask).toHaveBeenCalledWith(taskId, expectedChanges);
+    expect(taskManager.updateTask).toHaveBeenCalledWith(
+      taskId,
+      expectedChanges
+    );
 
     // Check for success message
-    expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('updated successfully'));
+    expect(mockConsoleLog).toHaveBeenCalledWith(
+      expect.stringContaining('updated successfully')
+    );
     expect(mockConsoleError).not.toHaveBeenCalled();
   });
 
@@ -339,14 +376,22 @@ describe('registerUpdateCommand action handler (interactive)', () => {
     taskManager.getTask.mockRejectedValue(error);
 
     // Simulate running the command
-    await program.parseAsync(['node', 'test', 'update', taskId, '--interactive']);
+    await program.parseAsync([
+      'node',
+      'test',
+      'update',
+      taskId,
+      '--interactive',
+    ]);
 
     // Assertions
     expect(taskManager.getTask).toHaveBeenCalledTimes(1);
     expect(taskManager.getTask).toHaveBeenCalledWith(taskId);
     expect(inquirer.prompt).not.toHaveBeenCalled();
     expect(taskManager.updateTask).not.toHaveBeenCalled();
-    expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining(`Task with ID "${taskId}" not found.`));
+    expect(mockConsoleError).toHaveBeenCalledWith(
+      expect.stringContaining(`Task with ID "${taskId}" not found.`)
+    );
     // Check if exit code was set (optional, depends on exact implementation)
     // expect(mockProcessExit).toHaveBeenCalledWith(1);
   });
@@ -378,13 +423,21 @@ describe('registerUpdateCommand action handler (interactive)', () => {
     vi.mocked(inquirer.prompt).mockResolvedValue(mockAnswers);
 
     // Simulate running the command
-    await program.parseAsync(['node', 'test', 'update', taskId, '--interactive']);
+    await program.parseAsync([
+      'node',
+      'test',
+      'update',
+      taskId,
+      '--interactive',
+    ]);
 
     // Assertions
     expect(taskManager.getTask).toHaveBeenCalledTimes(1);
     expect(inquirer.prompt).toHaveBeenCalledTimes(1);
     expect(taskManager.updateTask).not.toHaveBeenCalled(); // Core logic should not be called
-    expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('No changes detected'));
+    expect(mockConsoleLog).toHaveBeenCalledWith(
+      expect.stringContaining('No changes detected')
+    );
     expect(mockConsoleError).not.toHaveBeenCalled();
   });
 
@@ -397,19 +450,31 @@ describe('registerUpdateCommand action handler (interactive)', () => {
     vi.mocked(inquirer.prompt).mockRejectedValue(inquirerError);
 
     // Simulate running the command
-    await program.parseAsync(['node', 'test', 'update', taskId, '--interactive']);
+    await program.parseAsync([
+      'node',
+      'test',
+      'update',
+      taskId,
+      '--interactive',
+    ]);
 
     // Assertions
     expect(taskManager.getTask).toHaveBeenCalledTimes(1);
     expect(inquirer.prompt).toHaveBeenCalledTimes(1);
     expect(taskManager.updateTask).not.toHaveBeenCalled();
-    expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('Error: Inquirer update failed'));
-    expect(mockConsoleLog).not.toHaveBeenCalledWith(expect.stringContaining('updated successfully'));
+    expect(mockConsoleError).toHaveBeenCalledWith(
+      expect.stringContaining('Error: Inquirer update failed')
+    );
+    expect(mockConsoleLog).not.toHaveBeenCalledWith(
+      expect.stringContaining('updated successfully')
+    );
   });
 
   it('should log an error if updateTaskLogic (taskManager.updateTask) rejects in interactive mode', async () => {
     const taskId = 'update-logic-err';
-    const existingTask = createMockTask(taskId, { title: 'Old Logic Error Title' });
+    const existingTask = createMockTask(taskId, {
+      title: 'Old Logic Error Title',
+    });
     taskManager.getTask.mockResolvedValue(existingTask);
 
     const mockAnswers = {
@@ -428,15 +493,26 @@ describe('registerUpdateCommand action handler (interactive)', () => {
     taskManager.updateTask.mockRejectedValue(logicError); // Mock the underlying storage call to fail
 
     // Simulate running the command
-    await program.parseAsync(['node', 'test', 'update', taskId, '--interactive']);
+    await program.parseAsync([
+      'node',
+      'test',
+      'update',
+      taskId,
+      '--interactive',
+    ]);
 
     // Assertions
     expect(taskManager.getTask).toHaveBeenCalledTimes(1);
     expect(inquirer.prompt).toHaveBeenCalledTimes(1);
     expect(taskManager.updateTask).toHaveBeenCalledTimes(1); // Logic was called
-    expect(taskManager.updateTask).toHaveBeenCalledWith(taskId, { title: 'New Logic Error Title' }); // Called with changes
-    expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('Error: Failed to save update to storage'));
-    expect(mockConsoleLog).not.toHaveBeenCalledWith(expect.stringContaining('updated successfully'));
+    expect(taskManager.updateTask).toHaveBeenCalledWith(taskId, {
+      title: 'New Logic Error Title',
+    }); // Called with changes
+    expect(mockConsoleError).toHaveBeenCalledWith(
+      expect.stringContaining('Error: Failed to save update to storage')
+    );
+    expect(mockConsoleLog).not.toHaveBeenCalledWith(
+      expect.stringContaining('updated successfully')
+    );
   });
-
 });

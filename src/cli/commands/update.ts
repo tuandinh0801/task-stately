@@ -8,18 +8,17 @@ import {
   TaskStatusSchema,
   TaskTypeSchema,
   TaskType,
-  // TaskTypeSchema, // Removed duplicate
   UpdateTaskData,
   TaskNotFoundError,
   Task,
 } from '@/types/task';
-// Removed incorrect import of parseTags, parseCriteria
 
 // Extracted pure logic for updating a task
 export async function updateTaskLogic(
   taskManager: TaskManager,
   id: string,
-  options: { // This options type is for the logic function, not commander directly
+  options: {
+    // This options type is for the logic function, not commander directly
     title?: string;
     description?: string;
     priority?: string;
@@ -29,7 +28,7 @@ export async function updateTaskLogic(
     criteria?: string[]; // Corresponds to acceptanceCriteria in TaskManager
     assignee?: string;
     parentId?: string | null; // Added parentId (can be null for root)
-  },
+  }
 ): Promise<Task> {
   const updateData: UpdateTaskData = {};
   let optionsProvided = false;
@@ -81,14 +80,13 @@ export async function updateTaskLogic(
   } catch (error: any) {
     // Re-throw Zod validation errors or other parsing errors
     if (error.errors) {
-       const errorMessage = `Invalid input: ${error.errors
-            .map((e: any) => `${e.path.join('.')} - ${e.message}`)
-            .join(', ')}`;
-       throw new Error(errorMessage);
+      const errorMessage = `Invalid input: ${error.errors
+        .map((e: any) => `${e.path.join('.')} - ${e.message}`)
+        .join(', ')}`;
+      throw new Error(errorMessage);
     }
     throw error; // Re-throw other unexpected errors during parsing
   }
-
 
   // If no specific update options were provided via flags, it's an error unless interactive mode is intended.
   // The interactive mode handles fetching the task and prompting.
@@ -116,16 +114,15 @@ function hasUpdateOptions(options: any): boolean {
     'tags',
     'criteria',
     'assignee',
-    'parentId' // This is the key defined in the .option() for commander
+    'parentId', // This is the key defined in the .option() for commander
   ];
   // Check if any of these options were actually passed (value is not undefined)
-  return commanderOptionKeys.some(key => options[key] !== undefined);
+  return commanderOptionKeys.some((key) => options[key] !== undefined);
 }
-
 
 export async function registerUpdateCommand(
   program: Command,
-  taskManager: TaskManager,
+  taskManager: TaskManager
 ) {
   program
     .command('update')
@@ -136,23 +133,26 @@ export async function registerUpdateCommand(
     .option('-d, --description <description>', 'New description for the task')
     .option(
       '-p, --priority <priority>',
-      `New priority (${TaskPrioritySchema.options.join(', ')})`,
+      `New priority (${TaskPrioritySchema.options.join(', ')})`
     )
-    .option(
-      '--type <type>',
-      `New type (${TaskTypeSchema.options.join(', ')})`,
-    )
+    .option('--type <type>', `New type (${TaskTypeSchema.options.join(', ')})`)
     .option(
       '-s, --status <status>',
-      `New status (${TaskStatusSchema.options.join(', ')})`,
+      `New status (${TaskStatusSchema.options.join(', ')})`
     )
-    .option('--tags <tags...>', 'Replace all existing tags with the provided ones (space-separated)')
+    .option(
+      '--tags <tags...>',
+      'Replace all existing tags with the provided ones (space-separated)'
+    )
     .option(
       '--criteria <criteria...>',
-      'Replace all existing acceptance criteria with the provided ones (space-separated)',
+      'Replace all existing acceptance criteria with the provided ones (space-separated)'
     )
     .option('--assignee <assignee>', 'New assignee for the task')
-    .option('--parentId <id>', 'New parent task ID (use "null", "none", or "root" to make it top-level)') // Added parentId option
+    .option(
+      '--parentId <id>',
+      'New parent task ID (use "null", "none", or "root" to make it top-level)'
+    ) // Added parentId option
     .action(async (id: string, options) => {
       // Check if interactive mode is forced OR if no update flags were provided
       const isInteractive = options.interactive || !hasUpdateOptions(options);
@@ -176,13 +176,15 @@ export async function registerUpdateCommand(
 
           // Explicit check for undefined, although TaskNotFoundError should cover this
           if (!existingTask) {
-             console.error(`Error: Task with ID "${id}" could not be retrieved.`);
-             process.exitCode = 1;
-             return;
+            console.error(
+              `Error: Task with ID "${id}" could not be retrieved.`
+            );
+            process.exitCode = 1;
+            return;
           }
 
-
-          const questions = [ // Removed incorrect type annotation
+          const questions = [
+            // Removed incorrect type annotation
             {
               type: 'input',
               name: 'title',
@@ -226,7 +228,8 @@ export async function registerUpdateCommand(
             {
               type: 'input', // Using input for simplicity, could use editor
               name: 'criteria',
-              message: 'Acceptance Criteria (comma-separated, leave empty to keep current):',
+              message:
+                'Acceptance Criteria (comma-separated, leave empty to keep current):',
               default: existingTask.acceptanceCriteria?.join(', ') || '',
             },
             {
@@ -235,10 +238,12 @@ export async function registerUpdateCommand(
               message: 'Assignee (leave empty to keep current):',
               default: existingTask.assignee || '',
             },
-            { // Add parentId prompt
+            {
+              // Add parentId prompt
               type: 'input',
               name: 'parentId',
-              message: 'Parent Task ID (leave empty to keep current, use "null", "none", or "root" for top-level):',
+              message:
+                'Parent Task ID (leave empty to keep current, use "null", "none", or "root" for top-level):',
               default: existingTask.parentTaskId || '', // Show current parent ID
             },
           ];
@@ -248,7 +253,12 @@ export async function registerUpdateCommand(
           // --- Process answers ---
           // Helper to parse comma-separated strings like in add.ts
           const parseCommaSeparated = (input: string | undefined): string[] =>
-            input ? input.split(',').map(item => item.trim()).filter(Boolean) : [];
+            input
+              ? input
+                  .split(',')
+                  .map((item) => item.trim())
+                  .filter(Boolean)
+              : [];
 
           // Build update data, including only fields that changed from the default
           finalUpdateData = {};
@@ -270,75 +280,108 @@ export async function registerUpdateCommand(
           }
           // Compare parsed array with existing array
           const newTags = parseCommaSeparated(answers.tags);
-          if (JSON.stringify(newTags) !== JSON.stringify(existingTask.tags || [])) {
-             finalUpdateData.tags = newTags;
+          if (
+            JSON.stringify(newTags) !== JSON.stringify(existingTask.tags || [])
+          ) {
+            finalUpdateData.tags = newTags;
           }
           const newCriteria = parseCommaSeparated(answers.criteria);
-           if (JSON.stringify(newCriteria) !== JSON.stringify(existingTask.acceptanceCriteria || [])) {
-             finalUpdateData.acceptanceCriteria = newCriteria;
+          if (
+            JSON.stringify(newCriteria) !==
+            JSON.stringify(existingTask.acceptanceCriteria || [])
+          ) {
+            finalUpdateData.acceptanceCriteria = newCriteria;
           }
           if (answers.assignee !== (existingTask.assignee || '')) {
-             finalUpdateData.assignee = answers.assignee || undefined;
+            finalUpdateData.assignee = answers.assignee || undefined;
           }
           // Handle parentId update
           const parentIdInput = answers.parentId?.toLowerCase();
-          if (parentIdInput !== (existingTask.parentTaskId || '')) { // Check if changed
-             if (parentIdInput === 'null' || parentIdInput === 'none' || parentIdInput === 'root' || parentIdInput === '') {
-                // Setting to null only if it wasn't already null/undefined
-                if (existingTask.parentTaskId !== null && existingTask.parentTaskId !== undefined) {
-                   finalUpdateData.parentTaskId = null;
-                }
-             } else if (parentIdInput) {
-                // Validate if the new parent ID exists? TaskManager should handle this.
-                finalUpdateData.parentTaskId = answers.parentId; // Use original case if not null/none/root
-             }
-             // If input is empty string and current parent is already null/undefined, do nothing
+          if (parentIdInput !== (existingTask.parentTaskId || '')) {
+            // Check if changed
+            if (
+              parentIdInput === 'null' ||
+              parentIdInput === 'none' ||
+              parentIdInput === 'root' ||
+              parentIdInput === ''
+            ) {
+              // Setting to null only if it wasn't already null/undefined
+              if (
+                existingTask.parentTaskId !== null &&
+                existingTask.parentTaskId !== undefined
+              ) {
+                finalUpdateData.parentTaskId = null;
+              }
+            } else if (parentIdInput) {
+              // Validate if the new parent ID exists? TaskManager should handle this.
+              finalUpdateData.parentTaskId = answers.parentId; // Use original case if not null/none/root
+            }
+            // If input is empty string and current parent is already null/undefined, do nothing
           }
           // --- End Process answers ---
 
-
-           // If no changes were actually made in interactive mode
-           if (Object.keys(finalUpdateData).length === 0) {
-             console.log(`No changes detected for task "${existingTask.title}" (ID: ${id}).`);
-             return;
-           }
-
+          // If no changes were actually made in interactive mode
+          if (Object.keys(finalUpdateData).length === 0) {
+            console.log(
+              `No changes detected for task "${existingTask.title}" (ID: ${id}).`
+            );
+            return;
+          }
         } else {
           // --- Non-Interactive Mode ---
           // Directly use options passed, updateTaskLogic will validate
           finalUpdateData = {
             ...(options.title !== undefined && { title: options.title }),
-            ...(options.description !== undefined && { description: options.description }),
-            ...(options.priority !== undefined && { priority: options.priority as TaskPriority }),
-            ...(options.type !== undefined && { type: options.type as TaskType }),
-            ...(options.status !== undefined && { status: options.status as TaskStatus }),
+            ...(options.description !== undefined && {
+              description: options.description,
+            }),
+            ...(options.priority !== undefined && {
+              priority: options.priority as TaskPriority,
+            }),
+            ...(options.type !== undefined && {
+              type: options.type as TaskType,
+            }),
+            ...(options.status !== undefined && {
+              status: options.status as TaskStatus,
+            }),
             ...(options.tags !== undefined && { tags: options.tags }), // Commander handles array parsing
-            ...(options.criteria !== undefined && { acceptanceCriteria: options.criteria }), // Commander handles array parsing
-            ...(options.assignee !== undefined && { assignee: options.assignee }),
+            ...(options.criteria !== undefined && {
+              acceptanceCriteria: options.criteria,
+            }), // Commander handles array parsing
+            ...(options.assignee !== undefined && {
+              assignee: options.assignee,
+            }),
             // Handle parentId from non-interactive options
             ...(options.parentId !== undefined && {
-               parentTaskId: ['null', 'none', 'root'].includes(options.parentId.toLowerCase())
-                 ? null
-                 : options.parentId
-             }),
+              parentTaskId: ['null', 'none', 'root'].includes(
+                options.parentId.toLowerCase()
+              )
+                ? null
+                : options.parentId,
+            }),
           };
 
-           // Check if any actual update data was provided
-           if (Object.keys(finalUpdateData).length === 0) {
-             console.error('Error: No update options provided. Use --interactive or specify fields to update.');
-             process.exitCode = 1;
-             return;
-           }
+          // Check if any actual update data was provided
+          if (Object.keys(finalUpdateData).length === 0) {
+            console.error(
+              'Error: No update options provided. Use --interactive or specify fields to update.'
+            );
+            process.exitCode = 1;
+            return;
+          }
         }
 
         // Call the extracted logic function with the determined data
-        const updatedTask = await updateTaskLogic(taskManager, id, finalUpdateData);
+        const updatedTask = await updateTaskLogic(
+          taskManager,
+          id,
+          finalUpdateData
+        );
 
         // Use console.log for success message
         console.log(
-          `✅ Task "${updatedTask.title}" (ID: ${updatedTask.id}) updated successfully.`,
+          `✅ Task "${updatedTask.title}" (ID: ${updatedTask.id}) updated successfully.`
         );
-
       } catch (error: any) {
         // Use console.error for error messages
         let errorMessage = '❌ Failed to update task.';

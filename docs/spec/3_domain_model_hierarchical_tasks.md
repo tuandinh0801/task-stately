@@ -15,7 +15,12 @@ import { z } from 'zod';
 
 // Enums remain the same (TaskStatusSchema, TaskPrioritySchema, TaskTypeSchema)
 export const TaskStatusSchema = z.enum([
-  'pending', 'in-progress', 'review', 'done', 'blocked', 'cancelled',
+  'pending',
+  'in-progress',
+  'review',
+  'done',
+  'blocked',
+  'cancelled',
 ]);
 export type TaskStatus = z.infer<typeof TaskStatusSchema>;
 
@@ -24,11 +29,11 @@ export type TaskPriority = z.infer<typeof TaskPrioritySchema>;
 
 // Ensure TaskTypeSchema includes desired hierarchical levels
 export const TaskTypeSchema = z.enum([
-  'epic',      // High-level initiative
-  'feature',   // Distinct part of functionality
-  'task',      // Specific piece of work
-  'bug',       // Defect correction
-  'chore',     // Maintenance or operational work
+  'epic', // High-level initiative
+  'feature', // Distinct part of functionality
+  'task', // Specific piece of work
+  'bug', // Defect correction
+  'chore', // Maintenance or operational work
   'refactor',
   'docs',
   'test',
@@ -87,7 +92,6 @@ export const NewTaskDataSchema = TaskSchema.omit({
 });
 export type NewTaskData = z.infer<typeof NewTaskDataSchema>;
 
-
 // Schema for data used when updating a task (all fields optional)
 export const UpdateTaskDataSchema = TaskSchema.partial().omit({
   id: true, // ID cannot be updated
@@ -114,7 +118,6 @@ export const TasksFileSchema = z.object({
   tasks: z.array(TaskSchema), // Flat list of all tasks
 });
 export type TasksFile = z.infer<typeof TasksFileSchema>;
-
 ```
 
 ### 2.2. Key Changes:
@@ -129,18 +132,18 @@ export type TasksFile = z.infer<typeof TasksFileSchema>;
 
 ## 3. Relationships
 
-*   **Hierarchy:** A `Task` can have zero or one `parentTask` (via `parentTaskId`) and zero or more `childTasks` (via `childTaskIds`). This forms a tree structure.
-*   **Dependencies:** A `Task` can depend on zero or more other `Tasks` (via `dependencies`). This forms a directed acyclic graph (DAG) overlayed on the hierarchy. Dependencies are independent of the parent/child structure.
+- **Hierarchy:** A `Task` can have zero or one `parentTask` (via `parentTaskId`) and zero or more `childTasks` (via `childTaskIds`). This forms a tree structure.
+- **Dependencies:** A `Task` can depend on zero or more other `Tasks` (via `dependencies`). This forms a directed acyclic graph (DAG) overlayed on the hierarchy. Dependencies are independent of the parent/child structure.
 
 ## 4. Constraints & Considerations
 
-*   **Circular Hierarchy:** Validation must be implemented (likely in `TaskManager`) to prevent a task from being its own ancestor (e.g., setting `parentTaskId` to itself or one of its descendants).
-*   **Data Storage:** The `JsonFileTaskStorage` will need to be updated to read and write the modified `Task` structure. Storing tasks as a flat list simplifies lookups by ID.
-*   **ID Generation:** A single, global sequential string ID strategy will be used. The `meta.lastTaskId` field in `tasks.json` will track the last used integer ID. The storage layer (`JsonFileTaskStorage`) will be responsible for:
-    *   Reading `meta.lastTaskId`.
-    *   Incrementing it for a new task.
-    *   Assigning the incremented value as a string for the new task's `id`.
-    *   Saving the updated `meta.lastTaskId`.
-    *   All tasks (epics, features, tasks, bugs, etc.) share this single sequence. Example: If `lastTaskId` is 7, the next task created gets `id: "8"`, and `lastTaskId` becomes 8.
-*   **Orphan Tasks vs. Cascade Delete:** The `deleteTask` operation will accept an optional flag (`cascade: boolean`). If `false` (default), children are orphaned (`parentTaskId` set to `null`). If `true`, children (and their descendants) are recursively deleted.
-*   **Performance:** Fetching a task and its entire descendant tree might require recursive lookups or multiple queries, which could impact performance for deep hierarchies. Consider optimizations like storing pre-calculated descendant lists if needed, or limiting the depth of fetches by default.
+- **Circular Hierarchy:** Validation must be implemented (likely in `TaskManager`) to prevent a task from being its own ancestor (e.g., setting `parentTaskId` to itself or one of its descendants).
+- **Data Storage:** The `JsonFileTaskStorage` will need to be updated to read and write the modified `Task` structure. Storing tasks as a flat list simplifies lookups by ID.
+- **ID Generation:** A single, global sequential string ID strategy will be used. The `meta.lastTaskId` field in `tasks.json` will track the last used integer ID. The storage layer (`JsonFileTaskStorage`) will be responsible for:
+  - Reading `meta.lastTaskId`.
+  - Incrementing it for a new task.
+  - Assigning the incremented value as a string for the new task's `id`.
+  - Saving the updated `meta.lastTaskId`.
+  - All tasks (epics, features, tasks, bugs, etc.) share this single sequence. Example: If `lastTaskId` is 7, the next task created gets `id: "8"`, and `lastTaskId` becomes 8.
+- **Orphan Tasks vs. Cascade Delete:** The `deleteTask` operation will accept an optional flag (`cascade: boolean`). If `false` (default), children are orphaned (`parentTaskId` set to `null`). If `true`, children (and their descendants) are recursively deleted.
+- **Performance:** Fetching a task and its entire descendant tree might require recursive lookups or multiple queries, which could impact performance for deep hierarchies. Consider optimizations like storing pre-calculated descendant lists if needed, or limiting the depth of fetches by default.

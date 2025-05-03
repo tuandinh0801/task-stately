@@ -23,6 +23,7 @@ To view all tasks, including subtasks indented hierarchically:
 - `--with-subtasks` (alias `-w`): Display tasks hierarchically, showing subtask relationships with indentation and branch characters (└─, ├─).
 
 Example: List all tasks hierarchically.
+
 ```bash
 task-stately list --with-subtasks
 # or
@@ -36,6 +37,7 @@ You can filter tasks by their status:
 - `--status <status>`: Filter by status (e.g., `pending`, `in-progress`, `completed`).
 
 Example: List only pending tasks (including any pending subtasks if using `-w`).
+
 ```bash
 task-stately list --status pending
 ```
@@ -48,6 +50,7 @@ You can sort tasks by various fields. Sorting applies within each level of the h
 - `--sort-order <order>`: Specify sort order (`asc` or `desc`, defaults to `asc`).
 
 Example: List all tasks hierarchically, sorted by priority in descending order.
+
 ```bash
 task-stately list -w --sort-by priority --sort-order desc
 ```
@@ -78,8 +81,7 @@ Press `Y` (or Enter) to confirm, or `N` to cancel.
 
 ---
 
-*For component details, see [6_components_reference.md](6_components_reference.md).*
----
+## _For component details, see [6_components_reference.md](6_components_reference.md)._
 
 ## Adding Tasks (`add`)
 
@@ -87,15 +89,15 @@ The `add` command creates a new task. You can specify task details using flags o
 
 ### Options
 
-| Option        | Alias | Description                                      | Required |
-|---------------|-------|--------------------------------------------------|----------|
-| `--title`     | `-t`  | The title of the task                            | Yes*     |
-| `--description`| `-d`  | A detailed description of the task               | No       |
-| `--priority`  | `-p`  | Task priority (`low`, `medium`, `high`)          | No       |
-| `--status`    | `-s`  | Task status (`todo`, `in-progress`, `done`)      | No       |
-| `--interactive`| `-i`  | Enter interactive mode to be prompted for details | No       |
+| Option          | Alias | Description                                       | Required |
+| --------------- | ----- | ------------------------------------------------- | -------- |
+| `--title`       | `-t`  | The title of the task                             | Yes\*    |
+| `--description` | `-d`  | A detailed description of the task                | No       |
+| `--priority`    | `-p`  | Task priority (`low`, `medium`, `high`)           | No       |
+| `--status`      | `-s`  | Task status (`todo`, `in-progress`, `done`)       | No       |
+| `--interactive` | `-i`  | Enter interactive mode to be prompted for details | No       |
 
-*\*Note: If `--title` is omitted and `--interactive` is not used, interactive mode will be triggered automatically.*
+_\*Note: If `--title` is omitted and `--interactive` is not used, interactive mode will be triggered automatically._
 
 ### Usage Examples
 
@@ -126,16 +128,16 @@ The `update` command modifies an existing task identified by its ID. You can spe
 
 ### Options
 
-| Option        | Alias | Description                                      |
-|---------------|-------|--------------------------------------------------|
-| `--title`     | `-t`  | Update the title of the task                     |
-| `--description`| `-d`  | Update the description of the task               |
-| `--priority`  | `-p`  | Update task priority (`low`, `medium`, `high`)   |
-| `--status`    | `-s`  | Update task status (`todo`, `in-progress`, `done`)|
-| `--dueDate`   |       | Update the due date (YYYY-MM-DD format)          |
-| `--interactive`| `-i`  | Enter interactive mode to select fields to update |
+| Option          | Alias | Description                                        |
+| --------------- | ----- | -------------------------------------------------- |
+| `--title`       | `-t`  | Update the title of the task                       |
+| `--description` | `-d`  | Update the description of the task                 |
+| `--priority`    | `-p`  | Update task priority (`low`, `medium`, `high`)     |
+| `--status`      | `-s`  | Update task status (`todo`, `in-progress`, `done`) |
+| `--dueDate`     |       | Update the due date (YYYY-MM-DD format)            |
+| `--interactive` | `-i`  | Enter interactive mode to select fields to update  |
 
-*Note: If no update options are provided and `--interactive` is not used, interactive mode will be triggered automatically.*
+_Note: If no update options are provided and `--interactive` is not used, interactive mode will be triggered automatically._
 
 ### Usage Examples
 

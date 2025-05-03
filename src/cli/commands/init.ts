@@ -18,7 +18,6 @@ export async function initLogic(taskManager: TaskManager): Promise<void> {
   // No return value needed, success is indicated by not throwing
 }
 
-
 /**
  * Registers the 'init' command with the program.
  * This command initializes the task storage, ensuring the storage file exists.
@@ -28,12 +27,12 @@ export async function initLogic(taskManager: TaskManager): Promise<void> {
  */
 export async function registerInitCommand(
   program: Command,
-  taskManager: TaskManager,
+  taskManager: TaskManager
 ): Promise<void> {
   program
     .command('init')
     .description(
-      'Initialize task storage (e.g., create tasks.json if it doesn\'t exist)',
+      "Initialize task storage (e.g., create tasks.json if it doesn't exist)"
     )
     .action(async () => {
       try {
@@ -44,10 +43,10 @@ export async function registerInitCommand(
         render(
           React.createElement(SuccessMessage, {
             message: 'Task storage initialized successfully.',
-          }),
+          })
         );
       } catch (error) {
-         // Render error message (UI concern)
+        // Render error message (UI concern)
         render(React.createElement(ErrorDisplay, { error: error as Error }));
         process.exitCode = 1;
       }

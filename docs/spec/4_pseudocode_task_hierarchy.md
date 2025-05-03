@@ -326,6 +326,6 @@ END CLASS
 4.  **`deleteTask` Updates:** Removes the task ID from its parent's `childTaskIds` and orphans its own children by setting their `parentTaskId` to `null`.
 5.  **Hierarchy Helpers:** Added pseudocode for `getTaskWithChildren` (potentially complex, needs careful implementation) and `getTaskAncestors`.
 6.  **Circular Hierarchy Check:** Introduced `isCircularHierarchy` helper to prevent invalid parent assignments during updates.
-7.  **Dependency Management:** Methods remain similar but rely on the updated `getTask` and `updateTask`. Circular *task* dependency checking (`isCircularDependency`) is noted as a separate, optional complexity.
+7.  **Dependency Management:** Methods remain similar but rely on the updated `getTask` and `updateTask`. Circular _task_ dependency checking (`isCircularDependency`) is noted as a separate, optional complexity.
 8.  **Storage Interaction:** Assumes the `ITaskStorage` interface and its implementation (`JsonFileTaskStorage`) will be updated to handle the new `Task` schema (including `parentTaskId`, `childTaskIds`) and potentially new methods if needed for optimized hierarchy queries.
 9.  **TDD Anchors:** Included `// TEST:` comments for key behaviors and edge cases to guide test development.

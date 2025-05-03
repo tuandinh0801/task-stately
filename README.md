@@ -5,9 +5,10 @@ A task management tool with CLI and MCP interfaces, designed for efficient workf
 ## Goal
 
 To create a robust task management tool ("task-stately") featuring:
-*   An interactive Command Line Interface (CLI) built with Ink/React.
-*   A Model Control Protocol (MCP) interface for programmatic access (e.g., by AI assistants).
-*   A flexible storage system using an adapter pattern, initially implemented with a single JSON file (`tasks.json`).
+
+- An interactive Command Line Interface (CLI) built with Ink/React.
+- A Model Control Protocol (MCP) interface for programmatic access (e.g., by AI assistants).
+- A flexible storage system using an adapter pattern, initially implemented with a single JSON file (`tasks.json`).
 
 ## Architecture Overview
 
@@ -47,15 +48,15 @@ For more details, see `context/high-level-architect.md`.
 
 ## Tech Stack
 
-*   **Language:** TypeScript
-*   **Runtime:** Node.js (LTS)
-*   **Package Manager:** pnpm
-*   **CLI Framework:** Commander.js (Parsing) + Ink/React (UI Rendering)
-*   **MCP Framework:** FastMCP
-*   **Validation:** Zod
-*   **Testing:** Vitest
-*   **Build Tool:** tsup (+ tsc for type checking)
-*   **Code Quality:** ESLint + Prettier
+- **Language:** TypeScript
+- **Runtime:** Node.js (LTS)
+- **Package Manager:** pnpm
+- **CLI Framework:** Commander.js (Parsing) + Ink/React (UI Rendering)
+- **MCP Framework:** FastMCP
+- **Validation:** Zod
+- **Testing:** Vitest
+- **Build Tool:** tsup (+ tsc for type checking)
+- **Code Quality:** ESLint + Prettier
 
 ## Folder Structure
 
@@ -92,7 +93,7 @@ For more details, see `context/high-level-architect.md`.
 For detailed information on usage, commands, and components, please refer to the [docs/](docs/) directory:
 
 - [User Guide (Commands)](docs/4_user_guide.md)
-- [Component Reference](docs/6_components_reference.md)
+
 ## Setup & Installation
 
 1.  **Prerequisites:** Node.js (LTS) and pnpm.
@@ -117,60 +118,64 @@ For detailed information on usage, commands, and components, please refer to the
 
 The primary way to interact with `task-stately` is through its CLI.
 
-*(Note: Ensure the project is built (`pnpm build`) before running commands directly with `node dist/cli/index.js ...` or link it globally for easier access.)*
+_(Note: Ensure the project is built (`pnpm build`) before running commands directly with `node dist/cli/index.js ...` or link it globally for easier access.)_
 
 **Basic Commands:**
 
-*   **Initialize:** Creates the `tasks.json` storage file if it doesn't exist.
-    ```bash
-    task-stately init
-    ```
-*   **Add Task:** Adds a new task. You can provide details via flags or use the interactive mode.
-    ```bash
-    # Add task using flags
-    task-stately add --title "Implement feature X" --description "Details..." --priority high
+- **Initialize:** Creates the `tasks.json` storage file if it doesn't exist.
+  ```bash
+  task-stately init
+  ```
+- **Add Task:** Adds a new task. You can provide details via flags or use the interactive mode.
 
-    # Add task interactively (prompts for details)
-    task-stately add --interactive
+  ```bash
+  # Add task using flags
+  task-stately add --title "Implement feature X" --description "Details..." --priority high
 
-    # Add task (will trigger interactive mode if required options like --title are missing)
-    task-stately add
-    ```
-*   **List Tasks:** Shows a list of all tasks.
-    ```bash
-    task-stately list
-    # Filter by status:
-    task-stately list --status todo
-    ```
-*   **Show Task:** Displays details for a specific task by ID.
-    ```bash
-    task-stately show <task-id>
-    ```
-*   **Update Task:** Modifies an existing task by ID. You can provide updates via flags or use the interactive mode.
-    ```bash
-    # Update task using flags
-    task-stately update <task-id> --status in-progress --description "Updated details..."
+  # Add task interactively (prompts for details)
+  task-stately add --interactive
 
-    # Update task interactively (prompts for fields to update)
-    task-stately update <task-id> --interactive
+  # Add task (will trigger interactive mode if required options like --title are missing)
+  task-stately add
+  ```
 
-    # Update task (will trigger interactive mode if no update options are provided)
-    task-stately update <task-id>
-    ```
-*   **Delete Task:** Removes a task by ID.
-    ```bash
-    task-stately delete <task-id>
-    ```
-*   **Manage Dependencies:** Add or remove dependencies between tasks.
-    ```bash
-    task-stately dependency add --taskId <task-id> --dependsOn <dependency-id>
-    task-stately dependency remove --taskId <task-id> --dependsOn <dependency-id>
-    ```
-*   **Manage Subtasks:** Add or remove subtasks.
-    ```bash
-    task-stately subtask add --parentId <parent-id> --title "Subtask title"
-    task-stately subtask remove --parentId <parent-id> --subtaskId <subtask-id>
-    ```
+- **List Tasks:** Shows a list of all tasks.
+  ```bash
+  task-stately list
+  # Filter by status:
+  task-stately list --status todo
+  ```
+- **Show Task:** Displays details for a specific task by ID.
+  ```bash
+  task-stately show <task-id>
+  ```
+- **Update Task:** Modifies an existing task by ID. You can provide updates via flags or use the interactive mode.
+
+  ```bash
+  # Update task using flags
+  task-stately update <task-id> --status in-progress --description "Updated details..."
+
+  # Update task interactively (prompts for fields to update)
+  task-stately update <task-id> --interactive
+
+  # Update task (will trigger interactive mode if no update options are provided)
+  task-stately update <task-id>
+  ```
+
+- **Delete Task:** Removes a task by ID.
+  ```bash
+  task-stately delete <task-id>
+  ```
+- **Manage Dependencies:** Add or remove dependencies between tasks.
+  ```bash
+  task-stately dependency add --taskId <task-id> --dependsOn <dependency-id>
+  task-stately dependency remove --taskId <task-id> --dependsOn <dependency-id>
+  ```
+- **Manage Subtasks:** Add or remove subtasks.
+  ```bash
+  task-stately subtask add --parentId <parent-id> --title "Subtask title"
+  task-stately subtask remove --parentId <parent-id> --subtaskId <subtask-id>
+  ```
 
 Run `task-stately --help` or `task-stately <command> --help` for more options.
 
@@ -178,46 +183,46 @@ Run `task-stately --help` or `task-stately <command> --help` for more options.
 
 Common scripts for development:
 
-*   **Build:** Compile TypeScript to JavaScript using tsup.
-    ```bash
-    pnpm build
-    ```
-*   **Watch & Build:** Automatically rebuild on file changes.
-    ```bash
-    pnpm dev
-    ```
-*   **Type Check:** Check for TypeScript errors without compiling.
-    ```bash
-    pnpm typecheck
-    ```
-*   **Lint:** Check code style using ESLint.
-    ```bash
-    pnpm lint
-    ```
-*   **Lint & Fix:** Automatically fix linting errors.
-    ```bash
-    pnpm lint:fix
-    ```
-*   **Format:** Format code using Prettier.
-    ```bash
-    pnpm format
-    ```
-*   **Test:** Run unit and integration tests using Vitest.
-    ```bash
-    pnpm test
-    ```
-*   **Test (Watch):** Run tests in watch mode.
-    ```bash
-    pnpm test:watch
-    ```
-*   **Test Coverage:** Run tests and generate a coverage report.
-    ```bash
-    pnpm coverage
-    ```
-*   **Validate:** Run lint, type check, and tests together.
-    ```bash
-    pnpm validate # Assumes a script like: "validate": "pnpm lint && pnpm typecheck && pnpm test"
-    ```
+- **Build:** Compile TypeScript to JavaScript using tsup.
+  ```bash
+  pnpm build
+  ```
+- **Watch & Build:** Automatically rebuild on file changes.
+  ```bash
+  pnpm dev
+  ```
+- **Type Check:** Check for TypeScript errors without compiling.
+  ```bash
+  pnpm typecheck
+  ```
+- **Lint:** Check code style using ESLint.
+  ```bash
+  pnpm lint
+  ```
+- **Lint & Fix:** Automatically fix linting errors.
+  ```bash
+  pnpm lint:fix
+  ```
+- **Format:** Format code using Prettier.
+  ```bash
+  pnpm format
+  ```
+- **Test:** Run unit and integration tests using Vitest.
+  ```bash
+  pnpm test
+  ```
+- **Test (Watch):** Run tests in watch mode.
+  ```bash
+  pnpm test:watch
+  ```
+- **Test Coverage:** Run tests and generate a coverage report.
+  ```bash
+  pnpm coverage
+  ```
+- **Validate:** Run lint, type check, and tests together.
+  ```bash
+  pnpm validate # Assumes a script like: "validate": "pnpm lint && pnpm typecheck && pnpm test"
+  ```
 
 **Linking for CLI Development:**
 
@@ -227,10 +232,40 @@ To use the `task-stately` command globally during development:
 2.  Link the package: `pnpm link --global`
 3.  Now you can run `task-stately <command>` directly in your terminal.
 
+## MCP Server
+
+The MCP (Management Control Panel) server provides a programmatic interface for interacting with the Task Manager, primarily designed for use by external tools or agents like AI assistants.
+
+### Starting the Server
+
+To start the MCP server, run the following command:
+
+```bash
+pnpm run mcp
+```
+
+This will start the server, typically listening on a predefined port (check server startup logs for details).
+
+### Available Tools
+
+The server exposes several tools (functions) for task management. These correspond to the modules found in `src/mcp/tools/`:
+
+| Tool Name              | Function                                      |
+| ---------------------- | --------------------------------------------- |
+| `init`                 | Initializes the task storage if not present.  |
+| `getTask`              | Retrieves details for a specific task by ID.  |
+| `listTasks`            | Lists all existing tasks.                     |
+| `addTask`              | Adds a new task.                              |
+| `addMultipleTasks`     | Adds multiple tasks in a single operation.    |
+| `updateTask`           | Updates an existing task's properties.        |
+| `deleteTask`           | Deletes a task by ID.                         |
+| `addTaskDependency`    | Adds a dependency relationship between tasks. |
+| `removeTaskDependency` | Removes a dependency relationship.            |
+
 ## Project Status
 
-*   **Phase 1: Project Setup & Foundation:** ✅ Complete
-*   **Phase 2: Core Logic & Storage Implementation:** ✅ Complete
-*   **Phase 3: CLI Implementation (Ink/React):** ✅ Complete
-*   **Phase 4: MCP Server Implementation:** ⏳ Planned
-*   **Phase 5: Refinement, Documentation & Packaging:** ⏳ Planned
+- **Phase 1: Project Setup & Foundation:** ✅ Complete
+- **Phase 2: Core Logic & Storage Implementation:** ✅ Complete
+- **Phase 3: CLI Implementation (Ink/React):** ✅ Complete
+- **Phase 4: MCP Server Implementation:** ✅ Complete
+- **Phase 5: Refinement, Documentation & Packaging:** ⏳ Planned

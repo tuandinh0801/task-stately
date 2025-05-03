@@ -10,7 +10,8 @@ export default defineConfig({
       provider: 'v8', // Use V8's built-in coverage
       reporter: ['text', 'json', 'html'], // Output formats for coverage report
       include: ['src/**/*.ts'], // Files to include in coverage
-      exclude: [ // Files/patterns to exclude
+      exclude: [
+        // Files/patterns to exclude
         'src/types/**/*.ts',
         'src/**/index.ts', // Often just barrel files
         'src/**/*.test.ts',

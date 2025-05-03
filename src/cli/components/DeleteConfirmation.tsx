@@ -37,7 +37,9 @@ const DeleteConfirmation: React.FC<DeleteConfirmationProps> = ({
         }
         setIsConfirmed(true); // Mark as confirmed to trigger final message render
       } catch (err: any) {
-        setError(err.message || 'An unexpected error occurred during deletion.');
+        setError(
+          err.message || 'An unexpected error occurred during deletion.'
+        );
         setIsConfirmed(true); // Mark as confirmed to show error
       } finally {
         onComplete(); // Signal completion regardless of success/failure

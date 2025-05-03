@@ -17,7 +17,7 @@ import DeleteConfirmation from '../components/DeleteConfirmation'; // Add standa
 export async function deleteTaskLogic(
   taskManager: TaskManager,
   id: string,
-  cascade: boolean = false, // Add cascade parameter with default
+  cascade: boolean = false // Add cascade parameter with default
 ): Promise<boolean> {
   // Directly call and return the result from taskManager
   // Let the caller handle specific error types if needed,
@@ -26,7 +26,6 @@ export async function deleteTaskLogic(
   return deleted;
 }
 
-
 /**
  * Registers the 'delete' command with the program.
  * @param program - The commander program instance.
@@ -34,7 +33,7 @@ export async function deleteTaskLogic(
  */
 export async function registerDeleteCommand(
   program: Command,
-  taskManager: TaskManager,
+  taskManager: TaskManager
 ): Promise<void> {
   program
     .command('delete')
@@ -42,7 +41,8 @@ export async function registerDeleteCommand(
     .description('Delete a task by its ID')
     .argument('<id>', 'ID of the task to delete')
     .option('-c, --cascade', 'Delete child tasks recursively', false) // Add cascade option
-    .action(async (id: string, options: { cascade: boolean }) => { // Add options type
+    .action(async (id: string, options: { cascade: boolean }) => {
+      // Add options type
       // Render the interactive confirmation component using the standard import
       const app = render(
         React.createElement(DeleteConfirmation, {
@@ -53,7 +53,7 @@ export async function registerDeleteCommand(
             // Optional: Add any logic needed after confirmation component exits
             // console.log('Confirmation component finished.');
           },
-        }),
+        })
       );
 
       // Wait for the Ink application instance to exit

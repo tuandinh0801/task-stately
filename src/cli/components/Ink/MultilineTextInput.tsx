@@ -70,7 +70,10 @@ function MultilineTextInput({
         previousKey.current = key;
 
         // Submit on Ctrl+Enter or Cmd+Enter
-        if (key.return && (previousKey.current === key.ctrl || previousKey.current === key.meta)) {
+        if (
+          key.return &&
+          (previousKey.current === key.ctrl || previousKey.current === key.meta)
+        ) {
           onSubmit?.(value);
           return;
         }
@@ -85,7 +88,7 @@ function MultilineTextInput({
           // Add a new line on Enter
           const beforeCursor = lines[cursorRow]?.substring(0, cursorCol) || '';
           const afterCursor = lines[cursorRow]?.substring(cursorCol) || '';
-          
+
           lines.splice(cursorRow, 1, beforeCursor, afterCursor);
           newValue = lines.join('\n');
           newCursorRow++;
@@ -94,7 +97,8 @@ function MultilineTextInput({
           if (cursorCol > 0) {
             // Delete character before cursor
             const line = lines[cursorRow];
-            lines[cursorRow] = line.substring(0, cursorCol - 1) + line.substring(cursorCol);
+            lines[cursorRow] =
+              line.substring(0, cursorCol - 1) + line.substring(cursorCol);
             newCursorCol--;
           } else if (cursorRow > 0) {
             // Join with previous line
@@ -109,7 +113,8 @@ function MultilineTextInput({
           const line = lines[cursorRow];
           if (cursorCol < line.length) {
             // Delete character after cursor
-            lines[cursorRow] = line.substring(0, cursorCol) + line.substring(cursorCol + 1);
+            lines[cursorRow] =
+              line.substring(0, cursorCol) + line.substring(cursorCol + 1);
           } else if (cursorRow < lines.length - 1) {
             // Join with next line
             const nextLine = lines[cursorRow + 1];
@@ -143,7 +148,7 @@ function MultilineTextInput({
             newCursorRow++;
             newCursorCol = 0;
           }
-        // Use ctrl+a for home and ctrl+e for end (common terminal shortcuts)
+          // Use ctrl+a for home and ctrl+e for end (common terminal shortcuts)
         } else if (key.ctrl && input === 'a') {
           newCursorCol = 0;
         } else if (key.ctrl && input === 'e') {
@@ -151,7 +156,8 @@ function MultilineTextInput({
         } else if (!key.ctrl && !key.meta && !key.tab && input) {
           // Insert character at cursor position
           const line = lines[cursorRow] || '';
-          lines[cursorRow] = line.substring(0, cursorCol) + input + line.substring(cursorCol);
+          lines[cursorRow] =
+            line.substring(0, cursorCol) + input + line.substring(cursorCol);
           newValue = lines.join('\n');
           newCursorCol += input.length;
         }
@@ -177,7 +183,7 @@ function MultilineTextInput({
       const beforeCursor = line.substring(0, cursorCol);
       const atCursor = line.substring(cursorCol, cursorCol + 1) || ' ';
       const afterCursor = line.substring(cursorCol + 1);
-      
+
       return (
         <Text key={index}>
           {beforeCursor}
@@ -191,7 +197,11 @@ function MultilineTextInput({
 
   // If empty, show placeholder
   if (value === '' && placeholder) {
-    renderedLines.push(<Text key="placeholder" dimColor>{placeholder}</Text>);
+    renderedLines.push(
+      <Text key="placeholder" dimColor>
+        {placeholder}
+      </Text>
+    );
   }
 
   return (

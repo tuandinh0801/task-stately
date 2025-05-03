@@ -1,7 +1,11 @@
 import React, { FC, useCallback, useState } from 'react';
 import TextInput, { Props as TextInputProps } from './TextInput';
 
-interface ConfirmInputProps extends Omit<TextInputProps, 'onSubmit' | 'onChange' | 'value' | 'placeholder'> {
+interface ConfirmInputProps
+  extends Omit<
+    TextInputProps,
+    'onSubmit' | 'onChange' | 'value' | 'placeholder'
+  > {
   /** Default boolean value when input isn't a yes/no string */
   isChecked?: boolean;
   /** Called on each input change */
@@ -31,7 +35,6 @@ const ConfirmInput: FC<ConfirmInputProps> = ({
       else if (lower === 'no' || lower === 'n') result = false;
       else result = !!isChecked;
       onSubmit(result);
-      
     },
     [isChecked, onSubmit]
   );
