@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Command } from 'commander';
 import { TaskManager } from '../../core/TaskManager';
-import { registerInitCommand, initLogic } from './init'; // Import the logic function
+import { initLogic } from './init'; // Import the logic function
 
 // Mock TaskManager
 vi.mock('../../core/TaskManager');

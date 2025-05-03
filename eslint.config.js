@@ -1,76 +1,121 @@
-import eslint from '@eslint/js';
-import typescriptParser from '@typescript-eslint/parser';
-import typescriptEslint from '@typescript-eslint/eslint-plugin';
-import prettier from 'eslint-plugin-prettier';
-import prettierConfig from 'eslint-config-prettier';
+/* eslint-disable @typescript-eslint/no-require-imports */
 
-const parser = typescriptParser;
+const globals = require('globals');
+const js = require('@eslint/js');
+const tseslint = require('typescript-eslint');
+const reactPlugin = require('eslint-plugin-react');
+const reactHooksPlugin = require('eslint-plugin-react-hooks');
+const reactRefreshPlugin = require('eslint-plugin-react-refresh');
+const prettierConfig = require('eslint-config-prettier');
 
-export default [
-  // Base ESLint recommended rules
-  eslint.configs.recommended,
-
-  // TypeScript recommended rules
+module.exports = tseslint.config(
+  // Global ignores
   {
-    files: ['**/*.ts', '**/*.tsx'],
-    plugins: {
-      '@typescript-eslint': typescriptEslint,
-    },
-    rules: {
-      ...typescriptEslint.configs.recommended.rules,
-    },
-  },
-
-  // Prettier integration
-  {
-    plugins: {
-      prettier: prettier,
-    },
-    rules: {
-      'prettier/prettier': 'warn', // Show Prettier issues as warnings
-      // Add any project-specific rule overrides here
-    },
-  },
-
-  // Apply prettier config (must be last to disable conflicting rules)
-  prettierConfig,
-
-  // Global settings that apply to all files
-  {
-    languageOptions: {
-      ecmaVersion: 'latest',
-      sourceType: 'module',
-      parser: parser,
-      parserOptions: {
-        project: './tsconfig.json', // Link ESLint to TSConfig for type-aware linting
-      },
-      globals: {
-        // Node.js global variables
-        __dirname: 'readonly',
-        __filename: 'readonly',
-        exports: 'writable',
-        module: 'readonly',
-        require: 'readonly',
-        process: 'readonly',
-        Buffer: 'readonly',
-        global: 'readonly',
-        // ES2022 globals
-        console: 'readonly',
-        setTimeout: 'readonly',
-        clearTimeout: 'readonly',
-        setInterval: 'readonly',
-        clearInterval: 'readonly',
-      },
-    },
-
-    // Files to ignore
     ignores: [
       'node_modules/**',
       'dist/**',
-      '.eslintrc.cjs',
-      'eslint.config.cjs',
-      'tsup.config.ts',
-      'vitest.config.ts',
+      '.eslintrc.cjs', // Old config file
+      'eslint.config.cjs', // Old config file name possibility
+      // Add other build artifacts or generated files if needed
     ],
   },
-];
+
+  // Base ESLint recommended rules
+  js.configs.recommended,
+
+  // Basic TS config for JS/TS files (no type checking)
+  ...tseslint.configs.recommended,
+  {
+    // Apply basic TS rules globally first
+    files: ['**/*.{js,jsx,ts,tsx}'],
+    rules: {
+      // Add general TS/JS rules if needed
+    },
+  },
+
+  // Type-checked TS configuration (applied only to src/** files)
+  // Uses strict type-checked rules, excluding config files
+  ...tseslint.configs.strictTypeChecked.map((config) => ({
+    ...config,
+    files: ['src/**/*.{ts,tsx}'], // IMPORTANT: Limit type-checking to src
+  })),
+  {
+    // Specific overrides for TypeScript settings within src/**
+    files: ['src/**/*.{ts,tsx}'],
+    languageOptions: {
+      parserOptions: {
+        project: true, // Enable type-aware linting for src
+        tsconfigRootDir: __dirname, // Correctly locate tsconfig.json
+      },
+    },
+    rules: {
+      // Temporarily disable unsafe rules to reduce noise - ADDRESS THESE LATER!
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/unbound-method': 'off',
+      '@typescript-eslint/no-unnecessary-condition': 'warn',
+    },
+  },
+
+  // React specific configuration (applied only to src/**/*.{jsx,tsx} files)
+  {
+    files: ['src/**/*.{jsx,tsx}'], // Target only React files within src
+    ...reactPlugin.configs.flat.recommended, // React core rules
+    languageOptions: {
+      // Don't inherit from reactPlugin.configs.flat.recommended here,
+      // rely on the global tseslint parser setup
+      parserOptions: {
+        ecmaFeatures: { jsx: true }, // Ensure JSX is enabled
+      },
+      globals: {
+        ...globals.browser, // Add browser globals for React components
+      },
+    },
+    settings: {
+      react: {
+        version: 'detect', // Automatically detect React version
+      },
+    },
+    rules: {
+      // Add any project-specific React rule overrides here
+      'react/react-in-jsx-scope': 'off', // Not needed with new JSX transform
+      'react/prop-types': 'off', // Not needed when using TypeScript
+    },
+  },
+
+  // React Hooks configuration (applied only to src/**/*.{jsx,tsx} files)
+  {
+    files: ['src/**/*.{jsx,tsx}'], // Target only React files within src
+    plugins: { 'react-hooks': reactHooksPlugin },
+    rules: reactHooksPlugin.configs.recommended.rules, // Rules of Hooks and Exhaustive Deps
+  },
+
+  // React Refresh configuration (applied only to src/**/*.{jsx,tsx} files)
+  {
+    files: ['src/**/*.{jsx,tsx}'], // Target only React files within src
+    plugins: { 'react-refresh': reactRefreshPlugin },
+    rules: {
+      'react-refresh/only-export-components': [
+        'warn',
+        { allowConstantExport: true }, // Allow constants like loaders/actions in Remix/React Router
+      ],
+    },
+  },
+
+  // Ensure config files themselves use Node globals (overriding browser globals if necessary)
+  {
+    files: ['eslint.config.js', 'tsup.config.ts', 'vitest.config.ts'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
+
+  // Prettier configuration (must be last to override other formatting rules)
+  prettierConfig
+);

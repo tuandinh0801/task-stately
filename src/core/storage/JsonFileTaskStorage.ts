@@ -19,7 +19,10 @@ export class JsonFileTaskStorage implements ITaskStorage {
   private isInitialized = false; // Track initialization status
 
   // Modified constructor to accept projectRoot
-  constructor(projectRoot: string, fileName: string = DEFAULT_TASKS_FILE) {
+  constructor(
+    projectRoot: string = process.cwd(),
+    fileName: string = DEFAULT_TASKS_FILE
+  ) {
     // Resolve the absolute path based on the provided projectRoot
     this.tasksFilePath = path.resolve(projectRoot, fileName);
     // Ensure the directory exists synchronously or handle async initialization elsewhere

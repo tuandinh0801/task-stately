@@ -5,10 +5,7 @@ import {
   // Removed: NewSubtaskData,
   // Removed: UpdateSubtaskData,
 } from '@/core/storage/ITaskStorage';
-import {
-  Task,
-  TaskStatusSchema /* Removed: Subtask, SubtaskSchema */,
-} from '@/types/task';
+import { Task /* Removed: Subtask, SubtaskSchema */ } from '@/types/task';
 
 // Basic Error for missing tasks
 export class TaskNotFoundError extends Error {
@@ -143,11 +140,11 @@ export class TaskManager {
       }
 
       // 2d. Update New Parent's Children (if exists)
-      if (newParentTask) {
+      if (newParentTask && newParentId) {
         // newParentTask is defined only if newParentId was not null and valid
         const updatedChildIds = [...newParentTask.childTaskIds, id];
         // TEST: updateTask adds task ID to new parent's childTaskIds on re-parenting
-        await this.storage.updateTask(newParentId!, {
+        await this.storage.updateTask(newParentId, {
           // newParentId is non-null here
           childTaskIds: updatedChildIds,
         });
@@ -206,7 +203,7 @@ export class TaskManager {
 
     // 3. Handle Children based on cascade flag
     if (taskToDelete.childTaskIds && taskToDelete.childTaskIds.length > 0) {
-      if (cascade === true) {
+      if (cascade) {
         // 3a. Cascade Delete: Recursively delete all children
         //     Use Promise.allSettled for better error handling if one child deletion fails
         // TEST: deleteTask(id, true) recursively calls deleteTask for all direct children with cascade=true
@@ -230,7 +227,7 @@ export class TaskManager {
         const childOrphanPromises = taskToDelete.childTaskIds.map((childId) =>
           this.storage
             .updateTask(childId, { parentTaskId: null }) // Set parent to null
-            .catch((err) => {
+            .catch((err: unknown) => {
               // Log error if a child update fails, but don't stop the overall delete
               console.error(
                 `Failed to orphan child task ${childId} while deleting ${id}:`,

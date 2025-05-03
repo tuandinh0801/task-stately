@@ -31,41 +31,32 @@ export async function updateTaskLogic(
   }
 ): Promise<Task> {
   const updateData: UpdateTaskData = {};
-  let optionsProvided = false;
 
   // Use try...catch block for Zod parsing errors
   try {
     if (options.title !== undefined) {
       updateData.title = options.title;
-      optionsProvided = true;
     }
     if (options.description !== undefined) {
       updateData.description = options.description;
-      optionsProvided = true;
     }
     if (options.priority !== undefined) {
       updateData.priority = TaskPrioritySchema.parse(options.priority);
-      optionsProvided = true;
     }
     if (options.type !== undefined) {
       updateData.type = TaskTypeSchema.parse(options.type);
-      optionsProvided = true;
     }
     if (options.status !== undefined) {
       updateData.status = TaskStatusSchema.parse(options.status);
-      optionsProvided = true;
     }
     if (options.tags !== undefined) {
       updateData.tags = options.tags;
-      optionsProvided = true;
     }
     if (options.criteria !== undefined) {
       updateData.acceptanceCriteria = options.criteria;
-      optionsProvided = true;
     }
     if (options.assignee !== undefined) {
       updateData.assignee = options.assignee;
-      optionsProvided = true;
     }
     // Handle parentId separately, converting "null" or "" to null
     if (options.parentId !== undefined) {
@@ -75,7 +66,6 @@ export async function updateTaskLogic(
       } else {
         updateData.parentTaskId = parentIdValue;
       }
-      optionsProvided = true;
     }
   } catch (error: any) {
     // Re-throw Zod validation errors or other parsing errors
@@ -120,7 +110,7 @@ function hasUpdateOptions(options: any): boolean {
   return commanderOptionKeys.some((key) => options[key] !== undefined);
 }
 
-export async function registerUpdateCommand(
+export function registerUpdateCommand(
   program: Command,
   taskManager: TaskManager
 ) {
@@ -223,14 +213,14 @@ export async function registerUpdateCommand(
               type: 'input',
               name: 'tags',
               message: 'Tags (comma-separated, leave empty to keep current):',
-              default: existingTask.tags?.join(', ') || '',
+              default: existingTask.tags.join(', ') || '',
             },
             {
               type: 'input', // Using input for simplicity, could use editor
               name: 'criteria',
               message:
                 'Acceptance Criteria (comma-separated, leave empty to keep current):',
-              default: existingTask.acceptanceCriteria?.join(', ') || '',
+              default: existingTask.acceptanceCriteria.join(', ') || '',
             },
             {
               type: 'input',

@@ -13,10 +13,7 @@ import { TaskManager } from '../../core/TaskManager';
 import { addTaskLogic, AddTaskOptions, registerAddCommand } from './add'; // Import registerAddCommand
 import { NewTaskData } from '@/core/storage/ITaskStorage'; // Correct import path
 import {
-  Task,
-  TaskPriority,
-  TaskType,
-  TaskStatus, // Import TaskStatus
+  Task, // Import TaskStatus
   TaskPrioritySchema, // Import Zod schemas
   TaskTypeSchema,
   TaskStatusSchema,

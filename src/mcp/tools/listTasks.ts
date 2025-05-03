@@ -3,8 +3,7 @@ import { z } from 'zod';
 import { TaskManager } from '../../core/TaskManager';
 import { JsonFileTaskStorage } from '../../core/storage/JsonFileTaskStorage';
 import { TaskStatusSchema, TaskTypeSchema, Task } from '../../types/task';
-// Import Tool, Context, and TextContent type from fastmcp
-import { Tool, Context, TextContent, ContentResult } from 'fastmcp'; // Removed JsonContent
+import { Tool, ContentResult } from 'fastmcp';
 
 // Define input schema using Zod, matching the specification
 const ListTasksParamsSchema = z.object({
@@ -40,10 +39,7 @@ export const listTasksTool = (): Tool<any, typeof ListTasksParamsSchema> => ({
 
   // Implement the execute function as per the specification
   // Use Context<any> type and specify return type as TextContent
-  execute: async (
-    params: ListTasksParams,
-    context: Context<any>
-  ): Promise<ContentResult> => {
+  execute: async (params: ListTasksParams): Promise<ContentResult> => {
     // Parameters are validated by FastMCP based on the schema
     const { status, type, showDependencies, projectRoot } = params;
     // context is unused

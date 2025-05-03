@@ -13,7 +13,7 @@ export type Props = {
    * Listen to user's input. Useful in case there are multiple input components
    * at the same time and input must be "routed" to a specific component.
    */
-  readonly focus?: boolean; // eslint-disable-line react/boolean-prop-naming
+  readonly focus?: boolean;
 
   /**
    * Replace all chars and mask the value. Useful for password inputs.
@@ -23,12 +23,12 @@ export type Props = {
   /**
    * Whether to show cursor and allow navigation inside text input with arrow keys.
    */
-  readonly showCursor?: boolean; // eslint-disable-line react/boolean-prop-naming
+  readonly showCursor?: boolean;
 
   /**
    * Highlight pasted text
    */
-  readonly highlightPastedText?: boolean; // eslint-disable-line react/boolean-prop-naming
+  readonly highlightPastedText?: boolean;
 
   /**
    * Value to display in a text input.

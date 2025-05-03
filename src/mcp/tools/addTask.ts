@@ -1,9 +1,8 @@
-import { Tool, TextContent, ContentResult } from 'fastmcp';
+import { Tool, ContentResult } from 'fastmcp';
 import { z } from 'zod';
 import { TaskManager } from '../../core/TaskManager';
 import { JsonFileTaskStorage } from '../../core/storage/JsonFileTaskStorage';
-import { NewTaskDataSchema, Task } from '../../types/task'; // Import Task type
-import type { ZodSchema } from 'zod'; // Import ZodSchema type
+import { NewTaskDataSchema } from '../../types/task';
 
 // Define schema for inline child creation (similar to NewTaskData but without parentId)
 const InlineChildTaskDataSchema = NewTaskDataSchema.omit({
@@ -38,6 +37,7 @@ export const addTaskTool = (): Tool<any, typeof AddTaskParamsSchema> => ({
   execute: async (params: AddTaskParams) => {
     // Params validated by FastMCP
     // Extract projectRoot and separate it from the task data
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { children, projectRoot, ...parentTaskData } = params;
 
     try {

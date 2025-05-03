@@ -2,9 +2,6 @@ import { Command } from 'commander';
 import { render } from 'ink';
 import React from 'react';
 import { TaskManager } from '../../core/TaskManager';
-import SuccessMessage from '../components/SuccessMessage';
-import ErrorDisplay from '../components/ErrorDisplay';
-import { TaskNotFoundError } from '@/types/task';
 import DeleteConfirmation from '../components/DeleteConfirmation'; // Add standard import
 
 /**
@@ -31,10 +28,10 @@ export async function deleteTaskLogic(
  * @param program - The commander program instance.
  * @param taskManager - The TaskManager instance.
  */
-export async function registerDeleteCommand(
+export function registerDeleteCommand(
   program: Command,
   taskManager: TaskManager
-): Promise<void> {
+) {
   program
     .command('delete')
     .alias('rm')

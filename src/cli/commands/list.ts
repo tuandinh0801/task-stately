@@ -7,8 +7,7 @@ import ErrorDisplay from '../components/ErrorDisplay';
 import {
   Task,
   TaskStatus,
-  TaskStatusSchema,
-  TaskTreeNode, // Import the type
+  TaskStatusSchema, // Import the type
   // TaskSchema is not directly needed here anymore
 } from '@/types/task';
 // Removed InteractiveTaskList import as TaskList will handle both views

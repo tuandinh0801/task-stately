@@ -11,9 +11,6 @@ import { registerUpdateCommand } from './commands/update'; // Import the update 
 import { registerDeleteCommand } from './commands/delete'; // Import the delete command
 import { registerDependencyCommand } from './commands/dependency'; // Import the dependency command
 
-// TODO: Define an ErrorDisplay component for better error rendering
-// import ErrorDisplay from './components/ErrorDisplay';
-
 const storage = new JsonFileTaskStorage(); // Using default path for now
 const taskManager = new TaskManager(storage);
 
@@ -24,18 +21,18 @@ async function run() {
     .version('0.1.0');
 
   // Register commands
-  await registerInitCommand(program, taskManager);
-  await registerListCommand(program, taskManager); // Register the list command
-  await registerShowCommand(program, taskManager); // Register the show command
-  await registerAddCommand(program, taskManager); // Register the add command
-  await registerUpdateCommand(program, taskManager); // Register the update command
-  await registerDeleteCommand(program, taskManager); // Register the delete command
-  await registerDependencyCommand(program, taskManager); // Register the dependency command
+  registerInitCommand(program, taskManager);
+  registerListCommand(program, taskManager); // Register the list command
+  registerShowCommand(program, taskManager); // Register the show command
+  registerAddCommand(program, taskManager); // Register the add command
+  registerUpdateCommand(program, taskManager); // Register the update command
+  registerDeleteCommand(program, taskManager); // Register the delete command
+  registerDependencyCommand(program, taskManager); // Register the dependency command
 
   await program.parseAsync(process.argv);
 }
 
-run().catch((error) => {
+run().catch((error: unknown) => {
   // Temporary error handling. Replace with Ink rendering later.
   // render(<ErrorDisplay error={error} />); // Example of future Ink rendering
   console.error('An error occurred:', error);

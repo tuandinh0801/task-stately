@@ -43,10 +43,10 @@ export async function removeDependencyLogic(
  * @param program - The commander program instance.
  * @param taskManager - The TaskManager instance.
  */
-export async function registerDependencyCommand(
+export function registerDependencyCommand(
   program: Command,
   taskManager: TaskManager
-): Promise<void> {
+) {
   const depCmd = program
     .command('dependency')
     .alias('dep')

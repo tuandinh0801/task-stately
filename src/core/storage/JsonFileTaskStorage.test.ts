@@ -32,7 +32,7 @@ describe('JsonFileTaskStorage', () => {
 
   beforeEach(() => {
     // Use the virtual path for the storage instance in each test
-    storage = new JsonFileTaskStorage(TEST_FILE_PATH);
+    storage = new JsonFileTaskStorage(TEST_DIR, TEST_FILE_PATH);
     // Reset initialization status if tracked internally (though ensureInitialized handles it)
   });
 

@@ -1,7 +1,7 @@
 import { FastMCP } from 'fastmcp';
 // Removed Command import
-import { JsonFileTaskStorage } from '../core/storage/JsonFileTaskStorage'; // Keep for type usage in tools if needed, but not instantiated here
-import { TaskManager } from '../core/TaskManager'; // Keep for type usage in tools if needed, but not instantiated here
+// Keep for type usage in tools if needed, but not instantiated here
+// Keep for type usage in tools if needed, but not instantiated here
 // Removed z import if McpTool type comes from fastmcp
 
 // Import tool factory functions

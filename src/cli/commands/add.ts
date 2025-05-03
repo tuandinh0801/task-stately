@@ -11,7 +11,6 @@ import {
   TaskTypeSchema,
   TaskStatusSchema,
 } from '@/types/task';
-import { z } from 'zod';
 
 // Options received from Commander before validation/parsing
 export interface AddTaskOptions {

@@ -25,10 +25,10 @@ export async function initLogic(taskManager: TaskManager): Promise<void> {
  * @param program - The commander program instance.
  * @param taskManager - The TaskManager instance for interacting with tasks.
  */
-export async function registerInitCommand(
+export function registerInitCommand(
   program: Command,
   taskManager: TaskManager
-): Promise<void> {
+) {
   program
     .command('init')
     .description(

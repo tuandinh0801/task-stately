@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { JsonFileTaskStorage } from '../../core/storage/JsonFileTaskStorage';
 // Import Context along with Tool
-import { Tool, Context, TextContent, ContentResult } from 'fastmcp';
+import { Tool, ContentResult } from 'fastmcp';
 
 // Define input schema - now requires projectRoot
 const InitParamsSchema = z.object({

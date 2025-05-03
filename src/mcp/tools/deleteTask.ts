@@ -1,8 +1,7 @@
 import { TaskManager } from '../../core/TaskManager';
 import { JsonFileTaskStorage } from '../../core/storage/JsonFileTaskStorage';
 import { z } from 'zod';
-import { TaskNotFoundError } from '../../types/task';
-import { Tool, TextContent, ContentResult } from 'fastmcp'; // Import Tool and TextContent
+import { Tool, ContentResult } from 'fastmcp'; // Import Tool and TextContent
 
 // Define input schema
 const DeleteTaskParamsSchema = z.object({
@@ -33,10 +32,7 @@ export const deleteTaskTool = (): Tool<any, typeof DeleteTaskParamsSchema> => ({
   description: 'Deletes a task by ID, optionally cascading to children.',
   parameters: DeleteTaskParamsSchema,
   // Add context parameter to match expected signature, use args
-  execute: async (
-    args: DeleteTaskParams,
-    context: any
-  ): Promise<ContentResult> => {
+  execute: async (args: DeleteTaskParams): Promise<ContentResult> => {
     const { id, cascade, projectRoot } = args;
 
     try {

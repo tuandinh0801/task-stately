@@ -5,9 +5,6 @@ import { TaskManager } from '../../core/TaskManager';
 import { registerUpdateCommand, updateTaskLogic } from './update'; // Import logic too
 import {
   Task,
-  TaskStatus,
-  TaskPriority,
-  TaskType,
   UpdateTaskData,
   TaskNotFoundError,
   TaskStatusSchema,

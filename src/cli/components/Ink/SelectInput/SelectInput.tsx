@@ -126,7 +126,7 @@ function SelectInput<V>({
             : items;
 
           if (typeof onHighlight === 'function') {
-            onHighlight(slicedItems[nextSelectedIndex]!);
+            onHighlight(slicedItems[nextSelectedIndex]);
           }
         }
 
@@ -145,7 +145,7 @@ function SelectInput<V>({
             : items;
 
           if (typeof onHighlight === 'function') {
-            onHighlight(slicedItems[nextSelectedIndex]!);
+            onHighlight(slicedItems[nextSelectedIndex]);
           }
         }
 
@@ -171,7 +171,7 @@ function SelectInput<V>({
             : items;
 
           if (typeof onSelect === 'function') {
-            onSelect(slicedItems[selectedIndex]!);
+            onSelect(slicedItems[selectedIndex]);
           }
         }
       },
