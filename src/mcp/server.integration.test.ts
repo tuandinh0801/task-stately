@@ -28,7 +28,7 @@ describe('MCP Server Integration Tests', () => {
     serverPort = await getPort(); // Get an available port
 
     console.log(
-      `Starting server on port ${serverPort} with tasks file: ${tasksFilePath}`
+      `Starting server on port ${String(serverPort)} with tasks file: ${tasksFilePath}`
     );
 
     // Configure StdioClientTransport correctly
@@ -200,9 +200,11 @@ describe('MCP Server Integration Tests', () => {
           const data = JSON.parse(firstContent?.text ?? 'null'); // Parse the text content
           expect(Array.isArray(data)).toBe(true); // Check if parsed data is an array
           expect(data).toHaveLength(0); // Check if the array is empty
-        } catch (e) {
+        } catch (e: any) {
+          // Log the error for debugging purposes
+          console.error('JSON parsing error:', e.message);
           throw new Error(
-            `Failed to parse JSON from listTasks result: ${firstContent?.text}`
+            `Failed to parse JSON from listTasks result: ${firstContent?.text ?? 'undefined'}`
           );
         }
       } else {
@@ -284,9 +286,10 @@ describe('MCP Server Integration Tests', () => {
               expect.objectContaining({ id: '2', title: 'Task 2' }),
             ])
           );
-        } catch (e) {
+        } catch (e: any) {
+          console.error('JSON parsing error:', e.message);
           throw new Error(
-            `Failed to parse JSON from listTasks result: ${firstContent?.text}`
+            `Failed to parse JSON from listTasks result: ${firstContent?.text ?? 'undefined'}`
           );
         }
       } else {
@@ -390,9 +393,10 @@ describe('MCP Server Integration Tests', () => {
               expect.objectContaining({ id: '2', status: 'done' }),
             ])
           );
-        } catch (e) {
+        } catch (e: any) {
+          console.error('JSON parsing error:', e.message);
           throw new Error(
-            `Failed to parse JSON from listTasks result: ${firstContent?.text}`
+            `Failed to parse JSON from listTasks result: ${firstContent?.text ?? 'undefined'}`
           );
         }
       } else {
@@ -509,9 +513,10 @@ describe('MCP Server Integration Tests', () => {
           );
           expect(independentTask).toBeDefined();
           expect(independentTask?.dependsOnTitles).toEqual([]); // Task 3 has no dependencies
-        } catch (e) {
+        } catch (e: any) {
+          console.error('JSON parsing error:', e.message);
           throw new Error(
-            `Failed to parse JSON from listTasks result: ${firstContent?.text}`
+            `Failed to parse JSON from listTasks result: ${firstContent?.text ?? 'undefined'}`
           );
         }
       } else {
@@ -519,10 +524,229 @@ describe('MCP Server Integration Tests', () => {
       }
     });
     // it.todo('should include subtasks when requested'); // Keep original todo if subtask embedding is a separate feature
+
+    // --- New tests for listTasks showChildren ---
+    it('should include childrenTitles when showChildren is true', async () => {
+      // Setup: Add tasks with parent-child relationships
+      const addParent = await client.callTool({ name: 'addTask', arguments: { title: 'List Parent', projectRoot: testDir } });
+      if (addParent.isError || !Array.isArray(addParent.content) || !addParent.content[0]?.text) throw new Error('Failed to add parent');
+      const parentId = (JSON.parse(addParent.content[0].text) as Task).id;
+
+      const addChild1 = await client.callTool({ name: 'addTask', arguments: { title: 'List Child 1', parentTaskId: parentId, projectRoot: testDir } });
+      const addChild2 = await client.callTool({ name: 'addTask', arguments: { title: 'List Child 2', parentTaskId: parentId, projectRoot: testDir } });
+      const addOther = await client.callTool({ name: 'addTask', arguments: { title: 'List Other', projectRoot: testDir } }); // Independent task
+
+      if (addChild1.isError || addChild2.isError || addOther.isError) throw new Error('Failed to add child/other tasks');
+
+      // Call listTasks with showChildren flag
+      const result = await client.callTool({
+        name: 'listTasks',
+        arguments: { showChildren: true, projectRoot: testDir },
+      });
+
+      expect(result.isError).toBe(false);
+      expect(result.content).toBeDefined();
+      if (Array.isArray(result.content) && result.content.length > 0) {
+        const tasks = JSON.parse(result.content[0].text) as (Task & { childrenTitles?: string[] })[];
+        expect(tasks).toHaveLength(4); // Parent, Child1, Child2, Other
+
+        const parentTask = tasks.find(t => t.id === parentId);
+        const child1Task = tasks.find(t => t.title === 'List Child 1');
+        const child2Task = tasks.find(t => t.title === 'List Child 2');
+        const otherTask = tasks.find(t => t.title === 'List Other');
+
+        expect(parentTask).toBeDefined();
+        expect(child1Task).toBeDefined();
+        expect(child2Task).toBeDefined();
+        expect(otherTask).toBeDefined();
+
+        expect(parentTask).toHaveProperty('childrenTitles');
+        expect(parentTask?.childrenTitles).toEqual(expect.arrayContaining(['List Child 1', 'List Child 2']));
+        expect(parentTask?.childrenTitles).toHaveLength(2);
+
+        // Children and other tasks should have empty or undefined childrenTitles
+        expect(child1Task).toHaveProperty('childrenTitles');
+        expect(child1Task?.childrenTitles).toEqual([]);
+        expect(child2Task).toHaveProperty('childrenTitles');
+        expect(child2Task?.childrenTitles).toEqual([]);
+        expect(otherTask).toHaveProperty('childrenTitles');
+        expect(otherTask?.childrenTitles).toEqual([]);
+
+        // Verify dependsOnTitles is not included by default
+        expect(parentTask).not.toHaveProperty('dependsOnTitles');
+        expect(child1Task).not.toHaveProperty('dependsOnTitles');
+        expect(otherTask).not.toHaveProperty('dependsOnTitles');
+
+      } else {
+        throw new Error('Expected task list data');
+      }
+    });
+
+    it('should include both childrenTitles and dependsOnTitles when both flags are true', async () => {
+       // Setup: Parent depends on Dep, Parent has Child
+       const addParent = await client.callTool({ name: 'addTask', arguments: { title: 'List Parent Both', projectRoot: testDir } });
+       const addDep = await client.callTool({ name: 'addTask', arguments: { title: 'List Dep Both', projectRoot: testDir } });
+       if (addParent.isError || addDep.isError || !Array.isArray(addParent.content) || !addParent.content[0]?.text || !Array.isArray(addDep.content) || !addDep.content[0]?.text) throw new Error('Failed to add parent/dep');
+       const parentId = (JSON.parse(addParent.content[0].text) as Task).id;
+       const depId = (JSON.parse(addDep.content[0].text) as Task).id;
+
+       const addChild = await client.callTool({ name: 'addTask', arguments: { title: 'List Child Both', parentTaskId: parentId, projectRoot: testDir } });
+       const addDepLink = await client.callTool({ name: 'addTaskDependency', arguments: { taskId: parentId, dependencyId: depId, projectRoot: testDir } });
+       if (addChild.isError || addDepLink.isError) throw new Error('Failed to add child/link');
+
+       // Call listTasks with both flags
+       const result = await client.callTool({
+         name: 'listTasks',
+         arguments: { showChildren: true, showDependencies: true, projectRoot: testDir },
+       });
+
+       expect(result.isError).toBe(false);
+       if (Array.isArray(result.content) && result.content.length > 0) {
+         const tasks = JSON.parse(result.content[0].text) as (Task & { childrenTitles?: string[], dependsOnTitles?: string[] })[];
+         expect(tasks).toHaveLength(3); // Parent, Child, Dep
+
+         const parentTask = tasks.find(t => t.id === parentId);
+         const childTask = tasks.find(t => t.title === 'List Child Both');
+         const depTask = tasks.find(t => t.id === depId);
+
+         expect(parentTask).toBeDefined();
+         expect(childTask).toBeDefined();
+         expect(depTask).toBeDefined();
+
+         // Check Parent
+         expect(parentTask).toHaveProperty('childrenTitles');
+         expect(parentTask?.childrenTitles).toEqual(['List Child Both']);
+         expect(parentTask).toHaveProperty('dependsOnTitles');
+         expect(parentTask?.dependsOnTitles).toEqual(['List Dep Both']);
+
+         // Check Child
+         expect(childTask).toHaveProperty('childrenTitles');
+         expect(childTask?.childrenTitles).toEqual([]);
+         expect(childTask).toHaveProperty('dependsOnTitles');
+         expect(childTask?.dependsOnTitles).toEqual([]);
+
+         // Check Dependency
+         expect(depTask).toHaveProperty('childrenTitles');
+         expect(depTask?.childrenTitles).toEqual([]);
+         expect(depTask).toHaveProperty('dependsOnTitles');
+         expect(depTask?.dependsOnTitles).toEqual([]);
+
+       } else {
+         throw new Error('Expected task list data');
+       }
+    });
+
+     it('should NOT include titles when flags are false or omitted', async () => {
+       // Setup: Parent depends on Dep, Parent has Child (same as previous test)
+       const addParent = await client.callTool({ name: 'addTask', arguments: { title: 'List Parent NoFlags', projectRoot: testDir } });
+       const addDep = await client.callTool({ name: 'addTask', arguments: { title: 'List Dep NoFlags', projectRoot: testDir } });
+       if (addParent.isError || addDep.isError || !Array.isArray(addParent.content) || !addParent.content[0]?.text || !Array.isArray(addDep.content) || !addDep.content[0]?.text) throw new Error('Failed to add parent/dep');
+       const parentId = (JSON.parse(addParent.content[0].text) as Task).id;
+       const depId = (JSON.parse(addDep.content[0].text) as Task).id;
+       const addChild = await client.callTool({ name: 'addTask', arguments: { title: 'List Child NoFlags', parentTaskId: parentId, projectRoot: testDir } });
+       const addDepLink = await client.callTool({ name: 'addTaskDependency', arguments: { taskId: parentId, dependencyId: depId, projectRoot: testDir } });
+       if (addChild.isError || addDepLink.isError) throw new Error('Failed to add child/link');
+
+       // Call listTasks with flags false
+       const resultFalse = await client.callTool({
+         name: 'listTasks',
+         arguments: { showChildren: false, showDependencies: false, projectRoot: testDir },
+       });
+       expect(resultFalse.isError).toBe(false);
+       if (Array.isArray(resultFalse.content) && resultFalse.content.length > 0) {
+         const tasks = JSON.parse(resultFalse.content[0].text);
+         tasks.forEach((task: any) => {
+           expect(task).not.toHaveProperty('childrenTitles');
+           expect(task).not.toHaveProperty('dependsOnTitles');
+         });
+       } else {
+         throw new Error('Expected task list data (flags false)');
+       }
+
+       // Call listTasks with flags omitted
+       const resultOmitted = await client.callTool({
+         name: 'listTasks',
+         arguments: { projectRoot: testDir },
+       });
+       expect(resultOmitted.isError).toBe(false);
+       if (Array.isArray(resultOmitted.content) && resultOmitted.content.length > 0) {
+         const tasks = JSON.parse(resultOmitted.content[0].text);
+         tasks.forEach((task: any) => {
+           expect(task).not.toHaveProperty('childrenTitles');
+           expect(task).not.toHaveProperty('dependsOnTitles');
+         });
+       } else {
+         throw new Error('Expected task list data (flags omitted)');
+       }
+     });
+
+     it('should return empty arrays when flags are true but no relevant relationships exist', async () => {
+       // Setup: Add independent tasks
+       await client.callTool({ name: 'addTask', arguments: { title: 'Independent 1', projectRoot: testDir } });
+       await client.callTool({ name: 'addTask', arguments: { title: 'Independent 2', projectRoot: testDir } });
+
+       // Call listTasks with flags true
+       const result = await client.callTool({
+         name: 'listTasks',
+         arguments: { showChildren: true, showDependencies: true, projectRoot: testDir },
+       });
+
+       expect(result.isError).toBe(false);
+       if (Array.isArray(result.content) && result.content.length > 0) {
+         const tasks = JSON.parse(result.content[0].text) as (Task & { childrenTitles?: string[], dependsOnTitles?: string[] })[];
+         expect(tasks).toHaveLength(2); // Only the two independent tasks
+
+         tasks.forEach(task => {
+           expect(task).toHaveProperty('childrenTitles');
+           expect(task.childrenTitles).toEqual([]);
+           expect(task).toHaveProperty('dependsOnTitles');
+           expect(task.dependsOnTitles).toEqual([]);
+         });
+       } else {
+         throw new Error('Expected task list data for edge case');
+       }
+     });
+    // --- End of new listTasks tests ---
   });
   describe('Tool: getTask', () => {
+    let parentId: string;
+    let childId: string;
+    let dependencyId: string;
+    let independentId: string;
+
+    beforeEach(async () => {
+      // Setup tasks for getTask tests involving relationships
+      const addParent = await client.callTool({ name: 'addTask', arguments: { title: 'GetTask Parent', projectRoot: testDir } });
+      const addDep = await client.callTool({ name: 'addTask', arguments: { title: 'GetTask Dependency', projectRoot: testDir } });
+      const addIndependent = await client.callTool({ name: 'addTask', arguments: { title: 'GetTask Independent', projectRoot: testDir } });
+
+      if (addParent.isError || !Array.isArray(addParent.content) || !addParent.content[0]?.text) throw new Error('Failed to add parent');
+      if (addDep.isError || !Array.isArray(addDep.content) || !addDep.content[0]?.text) throw new Error('Failed to add dependency');
+      if (addIndependent.isError || !Array.isArray(addIndependent.content) || !addIndependent.content[0]?.text) throw new Error('Failed to add independent');
+
+      parentId = (JSON.parse(addParent.content[0].text) as Task).id;
+      dependencyId = (JSON.parse(addDep.content[0].text) as Task).id;
+      independentId = (JSON.parse(addIndependent.content[0].text) as Task).id;
+
+      const addChild = await client.callTool({ name: 'addTask', arguments: { title: 'GetTask Child', parentTaskId: parentId, projectRoot: testDir } });
+      if (addChild.isError || !Array.isArray(addChild.content) || !addChild.content[0]?.text) throw new Error('Failed to add child');
+      childId = (JSON.parse(addChild.content[0].text) as Task).id;
+
+      // Add dependency: parent depends on dependencyId
+      const addDepLink = await client.callTool({ name: 'addTaskDependency', arguments: { taskId: parentId, dependencyId: dependencyId, projectRoot: testDir } });
+      if (addDepLink.isError) throw new Error('Failed to link dependency');
+
+      // Verify setup (optional but good practice)
+      const parentData = await client.callTool({ name: 'getTask', arguments: { id: parentId, projectRoot: testDir } });
+      if (parentData.isError || !Array.isArray(parentData.content) || !parentData.content[0]?.text) throw new Error('Failed to verify parent setup');
+      const parentTask = JSON.parse(parentData.content[0].text) as Task;
+      expect(parentTask.childTaskIds).toContain(childId);
+      expect(parentTask.dependencies).toContain(dependencyId);
+    });
+
+
     it('should return a task when given a valid ID', async () => {
-      // Setup: Add a task to the file
+      // Setup: Add a task to the file (using independentId from beforeEach)
       const targetTask = {
         id: '42',
         title: 'Target Task',
@@ -581,9 +805,10 @@ describe('MCP Server Integration Tests', () => {
           );
           // Optionally, check the full object if exact match is needed
           // expect(data).toEqual(targetTask);
-        } catch (e) {
+        } catch (e: any) {
+          console.error('JSON parsing error:', e.message);
           throw new Error(
-            `Failed to parse JSON from getTask result: ${firstContent?.text}`
+            `Failed to parse JSON from getTask result: ${firstContent?.text ?? 'undefined'}`
           );
         }
       } else {
@@ -649,6 +874,145 @@ describe('MCP Server Integration Tests', () => {
         expect(error.message).toContain('"message":"Required"');
       }
     });
+
+    // --- New tests for showChildren and showDependencies ---
+
+    it('should include childrenTitles when showChildren is true', async () => {
+      const result = await client.callTool({
+        name: 'getTask',
+        arguments: { id: parentId, showChildren: true, projectRoot: testDir },
+      });
+
+      expect(result.isError).toBe(false);
+      expect(result.content).toBeDefined();
+      if (Array.isArray(result.content) && result.content.length > 0) {
+        const task = JSON.parse(result.content[0].text) as Task & { childrenTitles?: string[] };
+        expect(task).toHaveProperty('childrenTitles');
+        expect(task.childrenTitles).toEqual(['GetTask Child']);
+        expect(task).not.toHaveProperty('dependsOnTitles'); // Should not be included by default
+      } else {
+        throw new Error('Expected task data');
+      }
+    });
+
+    it('should include dependsOnTitles when showDependencies is true', async () => {
+      const result = await client.callTool({
+        name: 'getTask',
+        arguments: { id: parentId, showDependencies: true, projectRoot: testDir },
+      });
+
+      expect(result.isError).toBe(false);
+      expect(result.content).toBeDefined();
+      if (Array.isArray(result.content) && result.content.length > 0) {
+        const task = JSON.parse(result.content[0].text) as Task & { dependsOnTitles?: string[] };
+        expect(task).toHaveProperty('dependsOnTitles');
+        expect(task.dependsOnTitles).toEqual(['GetTask Dependency']);
+        expect(task).not.toHaveProperty('childrenTitles'); // Should not be included by default
+      } else {
+        throw new Error('Expected task data');
+      }
+    });
+
+     it('should include both titles when both flags are true', async () => {
+      const result = await client.callTool({
+        name: 'getTask',
+        arguments: { id: parentId, showChildren: true, showDependencies: true, projectRoot: testDir },
+      });
+
+      expect(result.isError).toBe(false);
+      expect(result.content).toBeDefined();
+      if (Array.isArray(result.content) && result.content.length > 0) {
+        const task = JSON.parse(result.content[0].text) as Task & { childrenTitles?: string[], dependsOnTitles?: string[] };
+        expect(task).toHaveProperty('childrenTitles');
+        expect(task.childrenTitles).toEqual(['GetTask Child']);
+        expect(task).toHaveProperty('dependsOnTitles');
+        expect(task.dependsOnTitles).toEqual(['GetTask Dependency']);
+      } else {
+        throw new Error('Expected task data');
+      }
+    });
+
+    it('should NOT include titles when flags are false or omitted', async () => {
+       // Test with flags explicitly false
+      const resultFalse = await client.callTool({
+        name: 'getTask',
+        arguments: { id: parentId, showChildren: false, showDependencies: false, projectRoot: testDir },
+      });
+      expect(resultFalse.isError).toBe(false);
+       if (Array.isArray(resultFalse.content) && resultFalse.content.length > 0) {
+         const task = JSON.parse(resultFalse.content[0].text);
+         expect(task).not.toHaveProperty('childrenTitles');
+         expect(task).not.toHaveProperty('dependsOnTitles');
+       } else {
+         throw new Error('Expected task data (flags false)');
+       }
+
+       // Test with flags omitted (relies on the first test in this describe block)
+       const resultOmitted = await client.callTool({
+         name: 'getTask',
+         arguments: { id: parentId, projectRoot: testDir }, // Use parentId which has both relations
+       });
+       expect(resultOmitted.isError).toBe(false);
+       if (Array.isArray(resultOmitted.content) && resultOmitted.content.length > 0) {
+         const task = JSON.parse(resultOmitted.content[0].text);
+         expect(task).not.toHaveProperty('childrenTitles');
+         expect(task).not.toHaveProperty('dependsOnTitles');
+       } else {
+         throw new Error('Expected task data (flags omitted)');
+       }
+    });
+
+     it('should return empty arrays when flags are true but no children/dependencies exist', async () => {
+       // Test independent task (no children, no dependencies)
+       const resultIndependent = await client.callTool({
+         name: 'getTask',
+         arguments: { id: independentId, showChildren: true, showDependencies: true, projectRoot: testDir },
+       });
+       expect(resultIndependent.isError).toBe(false);
+       if (Array.isArray(resultIndependent.content) && resultIndependent.content.length > 0) {
+         const task = JSON.parse(resultIndependent.content[0].text) as Task & { childrenTitles?: string[], dependsOnTitles?: string[] };
+         expect(task).toHaveProperty('childrenTitles');
+         expect(task.childrenTitles).toEqual([]);
+         expect(task).toHaveProperty('dependsOnTitles');
+         expect(task.dependsOnTitles).toEqual([]);
+       } else {
+         throw new Error('Expected independent task data');
+       }
+
+       // Test child task (no children, no dependencies in this setup)
+       const resultChild = await client.callTool({
+         name: 'getTask',
+         arguments: { id: childId, showChildren: true, showDependencies: true, projectRoot: testDir },
+       });
+       expect(resultChild.isError).toBe(false);
+       if (Array.isArray(resultChild.content) && resultChild.content.length > 0) {
+         const task = JSON.parse(resultChild.content[0].text) as Task & { childrenTitles?: string[], dependsOnTitles?: string[] };
+         expect(task).toHaveProperty('childrenTitles');
+         expect(task.childrenTitles).toEqual([]);
+         expect(task).toHaveProperty('dependsOnTitles');
+         expect(task.dependsOnTitles).toEqual([]);
+       } else {
+         throw new Error('Expected child task data');
+       }
+
+       // Test dependency task (no children, no dependencies in this setup)
+       const resultDependency = await client.callTool({
+         name: 'getTask',
+         arguments: { id: dependencyId, showChildren: true, showDependencies: true, projectRoot: testDir },
+       });
+       expect(resultDependency.isError).toBe(false);
+       if (Array.isArray(resultDependency.content) && resultDependency.content.length > 0) {
+         const task = JSON.parse(resultDependency.content[0].text) as Task & { childrenTitles?: string[], dependsOnTitles?: string[] };
+         expect(task).toHaveProperty('childrenTitles');
+         expect(task.childrenTitles).toEqual([]);
+         expect(task).toHaveProperty('dependsOnTitles');
+         expect(task.dependsOnTitles).toEqual([]);
+       } else {
+         throw new Error('Expected dependency task data');
+       }
+     });
+
+    // --- End of new tests ---
   });
 
   describe('Tool: addTask', () => {
@@ -696,9 +1060,10 @@ describe('MCP Server Integration Tests', () => {
           expect(addedTask).toHaveProperty('parentTaskId', null); // Default parent
           expect(addedTask).toHaveProperty('childTaskIds', []); // Default children
           expect(addedTask).toHaveProperty('dependencies', []); // Default dependencies
-        } catch (e) {
+        } catch (e: any) {
+          console.error('JSON parsing error:', e.message);
           throw new Error(
-            `Failed to parse JSON from addTask result: ${firstContent?.text}`
+            `Failed to parse JSON from addTask result: ${firstContent?.text ?? 'undefined'}`
           );
         }
       } else {
@@ -716,7 +1081,11 @@ describe('MCP Server Integration Tests', () => {
           expect.objectContaining({ id: addedTaskId, title: newTaskTitle }),
         ])
       );
-      expect(storageData.meta.lastTaskId).toBe(parseInt(addedTaskId!, 10));
+      // Ensure addedTaskId is not null before parsing
+      if (addedTaskId === null) {
+        throw new Error('addedTaskId is null after adding task');
+      }
+      expect(storageData.meta.lastTaskId).toBe(parseInt(addedTaskId, 10));
     });
 
     it('should add a subtask successfully when parentTaskId is provided', async () => {
@@ -738,7 +1107,11 @@ describe('MCP Server Integration Tests', () => {
       } else {
         throw new Error('Failed to add parent task');
       }
-      const parentId = parentTask!.id;
+      // Ensure parentTask is not null before accessing id
+      if (!parentTask) {
+        throw new Error('parentTask is null after adding');
+      }
+      const parentId = parentTask.id;
 
       // 2. Add the subtask referencing the parent
       const subtaskTitle = 'My Subtask';
@@ -771,9 +1144,10 @@ describe('MCP Server Integration Tests', () => {
           expect(addedSubtask).toHaveProperty('title', subtaskTitle);
           expect(addedSubtask).toHaveProperty('parentTaskId', parentId); // Verify parent link
           expect(addedSubtask).toHaveProperty('status', 'pending');
-        } catch (e) {
+        } catch (e: any) {
+          console.error('JSON parsing error:', e.message);
           throw new Error(
-            `Failed to parse JSON from addTask (subtask) result: ${subtaskContent?.text}`
+            `Failed to parse JSON from addTask (subtask) result: ${subtaskContent?.text ?? 'undefined'}`
           );
         }
       } else {
@@ -796,7 +1170,11 @@ describe('MCP Server Integration Tests', () => {
       );
       expect(storedParent).toBeDefined();
       expect(storedParent.childTaskIds).toContain(subtaskId);
-      expect(storageData.meta.lastTaskId).toBe(parseInt(subtaskId!, 10)); // lastTaskId should be the latest
+      // Ensure subtaskId is not null before parsing
+      if (subtaskId === null) {
+        throw new Error('subtaskId is null after adding subtask');
+      }
+      expect(storageData.meta.lastTaskId).toBe(parseInt(subtaskId, 10)); // lastTaskId should be the latest
     });
 
     it('should return a validation error if required title parameter is missing', async () => {
@@ -927,9 +1305,10 @@ describe('MCP Server Integration Tests', () => {
             expect(task).toHaveProperty('childTaskIds', []);
             expect(task).toHaveProperty('dependencies', []);
           });
-        } catch (e) {
+        } catch (e: any) {
+          console.error('JSON parsing error:', e.message);
           throw new Error(
-            `Failed to parse JSON from addMultipleTasks result: ${firstContent?.text}`
+            `Failed to parse JSON from addMultipleTasks result: ${firstContent?.text ?? 'undefined'}`
           );
         }
       } else {
@@ -1030,9 +1409,10 @@ describe('MCP Server Integration Tests', () => {
           expect(parent2).toBeDefined();
           expect(parent2?.childTaskIds).toEqual([]);
           expect(parent2?.parentTaskId).toBeNull();
-        } catch (e) {
+        } catch (e: any) {
+          console.error('JSON parsing error:', e.message);
           throw new Error(
-            `Failed to parse JSON from addMultipleTasks (children) result: ${firstContent?.text}`
+            `Failed to parse JSON from addMultipleTasks (children) result: ${firstContent?.text ?? 'undefined'}`
           );
         }
       } else {
@@ -1149,9 +1529,10 @@ describe('MCP Server Integration Tests', () => {
             expect.arrayContaining([taskA?.id, taskC?.id])
           );
           expect(taskD?.dependencies).toHaveLength(2);
-        } catch (e) {
+        } catch (e: any) {
+          console.error('JSON parsing error:', e.message);
           throw new Error(
-            `Failed to parse JSON from addMultipleTasks (tempDeps) result: ${firstContent?.text}`
+            `Failed to parse JSON from addMultipleTasks (tempDeps) result: ${firstContent?.text ?? 'undefined'}`
           );
         }
       } else {
@@ -1300,9 +1681,10 @@ describe('MCP Server Integration Tests', () => {
             expect.arrayContaining([existingTask1.id, existingTask2.id])
           );
           expect(newTask2?.dependencies).toHaveLength(2);
-        } catch (e) {
+        } catch (e: any) {
+          console.error('JSON parsing error:', e.message);
           throw new Error(
-            `Failed to parse JSON from addMultipleTasks (existingDeps) result: ${firstContent?.text}`
+            `Failed to parse JSON from addMultipleTasks (existingDeps) result: ${firstContent?.text ?? 'undefined'}`
           );
         }
       } else {
@@ -1444,9 +1826,13 @@ describe('MCP Server Integration Tests', () => {
           );
           expect(taskB?.dependencies).toHaveLength(2);
           expect(taskC?.dependencies).toEqual([taskB?.id]);
-        } catch (e) {
+        } catch (e: unknown) { // Use unknown for better type safety
+          // Log the error message if it's an Error instance
+          if (e instanceof Error) {
+            console.error('JSON parsing error:', e.message);
+          }
           throw new Error(
-            `Failed to parse JSON from addMultipleTasks (combined) result: ${firstContent?.text}`
+            `Failed to parse JSON from addMultipleTasks (combined) result: ${firstContent?.text ?? 'undefined'}`
           );
         }
       } else {
@@ -1464,17 +1850,17 @@ describe('MCP Server Integration Tests', () => {
       const storageTaskMap = new Map<string, Task>(
         storageData.tasks.map((t: Task) => [t.id, t])
       );
-      const storedA = storageTaskMap.get(
-        addedMainTasks.find((t) => t.title === 'Task A (Parent)')!.id
-      ) as Task;
-      const storedB = storageTaskMap.get(
-        addedMainTasks.find(
-          (t) => t.title === 'Task B (Depends on A + Existing)'
-        )!.id
-      ) as Task;
-      const storedC = storageTaskMap.get(
-        addedMainTasks.find((t) => t.title === 'Task C (Depends on B)')!.id
-      ) as Task;
+      // Find tasks safely before accessing id
+      const taskAFinded = addedMainTasks.find((t) => t.title === 'Task A (Parent)');
+      const taskBFinded = addedMainTasks.find((t) => t.title === 'Task B (Depends on A + Existing)');
+      const taskCFinded = addedMainTasks.find((t) => t.title === 'Task C (Depends on B)');
+      if (!taskAFinded || !taskBFinded || !taskCFinded || addedChildTasks.length === 0) {
+          throw new Error('Could not find all added tasks in the result');
+      }
+
+      const storedA = storageTaskMap.get(taskAFinded.id) as Task;
+      const storedB = storageTaskMap.get(taskBFinded.id) as Task;
+      const storedC = storageTaskMap.get(taskCFinded.id) as Task;
       const storedChildA1 = storageTaskMap.get(addedChildTasks[0].id) as Task;
       const storedExisting = storageTaskMap.get(existingTask.id) as Task;
 
@@ -1719,12 +2105,17 @@ describe('MCP Server Integration Tests', () => {
           expect(updatedTask).toHaveProperty('priority', updates.priority);
           expect(updatedTask).toHaveProperty('updatedAt');
           // Ensure updatedAt is different from createdAt (or at least later)
+          // Add checks to ensure updatedTask is not null before accessing properties
+          if (!updatedTask) {
+            throw new Error('updatedTask is null after parsing');
+          }
           expect(
-            new Date(updatedTask!.updatedAt).getTime()
-          ).toBeGreaterThanOrEqual(new Date(updatedTask!.createdAt).getTime());
-        } catch (e) {
+            new Date(updatedTask.updatedAt).getTime()
+          ).toBeGreaterThanOrEqual(new Date(updatedTask.createdAt).getTime());
+        } catch (e: any) {
+          console.error('JSON parsing error:', e.message);
           throw new Error(
-            `Failed to parse JSON from updateTask result: ${firstContent?.text}`
+            `Failed to parse JSON from updateTask result: ${firstContent?.text ?? 'undefined'}`
           );
         }
       } else {

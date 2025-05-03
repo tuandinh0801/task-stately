@@ -2,14 +2,14 @@
 import { z } from 'zod';
 import { TaskManager } from '../../core/TaskManager';
 import { JsonFileTaskStorage } from '../../core/storage/JsonFileTaskStorage';
-import { TaskStatusSchema, TaskTypeSchema, Task } from '../../types/task';
+import { TaskStatusSchema, TaskTypeSchema } from '../../types/task';
 import { Tool, ContentResult } from 'fastmcp';
 
 // Define input schema using Zod, matching the specification
 const ListTasksParamsSchema = z.object({
-  status: TaskStatusSchema.optional().describe('Filter tasks by status'),
+  status: TaskStatusSchema.optional().describe(`Filter tasks by status (e.g. ${TaskStatusSchema.options.join(', ')})`),
   type: TaskTypeSchema.optional().describe(
-    'Filter tasks by type (e.g., epic, feature, task, bug)'
+    `Filter tasks by type (e.g., ${TaskTypeSchema.options.join(', ')})`
   ),
   showDependencies: z
     .boolean()
@@ -17,6 +17,13 @@ const ListTasksParamsSchema = z.object({
     .default(false)
     .describe(
       'If true, include the titles of tasks that each listed task depends on.'
+    ),
+  showChildren: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe(
+      'If true, include the titles of direct child tasks for each listed task.'
     ),
   projectRoot: z
     .string()
@@ -34,14 +41,14 @@ type ListTasksParams = z.infer<typeof ListTasksParamsSchema>;
 export const listTasksTool = (): Tool<any, typeof ListTasksParamsSchema> => ({
   name: 'listTasks',
   description:
-    'Lists tasks, optionally filtering by status/type and showing dependencies.',
+    'Lists tasks, optionally filtering by status/type and showing dependencies or children.',
   parameters: ListTasksParamsSchema,
 
   // Implement the execute function as per the specification
   // Use Context<any> type and specify return type as TextContent
   execute: async (params: ListTasksParams): Promise<ContentResult> => {
     // Parameters are validated by FastMCP based on the schema
-    const { status, type, showDependencies, projectRoot } = params;
+    const { status, type, showDependencies, showChildren, projectRoot } = params;
     // context is unused
 
     try {
@@ -69,22 +76,48 @@ export const listTasksTool = (): Tool<any, typeof ListTasksParamsSchema> => ({
         };
       }
 
-      // 4. Prepare response data, potentially augmenting with dependency titles
-      let responseData: (Task | (Task & { dependsOnTitles: string[] }))[] =
-        filteredTasks;
+      // 4. Prepare response data, potentially augmenting with dependency and/or children titles
+      let responseData = filteredTasks;
 
-      if (showDependencies) {
-        // Create a map for efficient ID-to-title lookup
-        const taskMap = new Map(allTasks.map((task) => [task.id, task.title]));
-        // Augment tasks with dependency titles
-        responseData = filteredTasks.map((task) => ({
-          ...task,
-          dependsOnTitles: task.dependencies.map(
-            (depId) => taskMap.get(depId) || `Unknown Task (ID: ${depId})`
-          ),
-          // No need to filter nulls, default string is provided
-        }));
+      // Create a map for efficient ID-to-title lookup if needed for dependencies or children
+      let taskMap: Map<string, string> | null = null;
+      let parentToChildrenMap: Map<string, string[]> | null = null;
+
+      if (showDependencies || showChildren) {
+        taskMap = new Map(allTasks.map((task) => [task.id, task.title]));
       }
+
+      // Build parent-to-children map if showing children
+      if (showChildren) {
+        parentToChildrenMap = new Map<string, string[]>();
+        for (const task of allTasks) {
+          if (task.parentTaskId) {
+            if (!parentToChildrenMap.has(task.parentTaskId)) {
+              parentToChildrenMap.set(task.parentTaskId, []);
+            }
+            parentToChildrenMap.get(task.parentTaskId)?.push(task.title);
+          }
+        }
+      }
+
+      // Process each task to add dependency and/or children titles
+      responseData = filteredTasks.map((task) => {
+        const enhancedTask: any = { ...task };
+
+        // Add dependency titles if requested
+        if (showDependencies && taskMap) {
+          enhancedTask.dependsOnTitles = task.dependencies.map(
+            (depId) => taskMap?.get(depId) || `Unknown Task (ID: ${depId})`
+          );
+        }
+
+        // Add children titles if requested
+        if (showChildren && parentToChildrenMap) {
+          enhancedTask.childrenTitles = parentToChildrenMap.get(task.id) || [];
+        }
+
+        return enhancedTask;
+      });
 
       // 5. Return success response with data as TextContent object { type: 'text', text: string }
       return {

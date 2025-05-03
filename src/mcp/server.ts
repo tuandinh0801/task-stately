@@ -29,8 +29,8 @@ const server = new FastMCP({
 // --- Tool Registration ---
 
 // Register each tool factory/definition
-server.addTool(getTaskTool());
 server.addTool(listTasksTool());
+server.addTool(getTaskTool());
 server.addTool(addTaskTool());
 server.addTool(addMultipleTasksTool());
 server.addTool(updateTaskTool());
@@ -54,8 +54,10 @@ async function startServer() {
 }
 
 // Start the server if this script is run directly
-if (require.main === module) {
-  startServer();
-}
-
-export { server, startServer }; // Export for potential programmatic use or testing
+startServer()
+  .then(() => {
+    console.log('Server started successfully.');
+  })
+  .catch((error: unknown) => {
+    console.error('Error starting server:', error);
+  });

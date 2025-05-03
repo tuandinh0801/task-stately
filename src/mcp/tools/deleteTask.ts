@@ -5,7 +5,7 @@ import { Tool, ContentResult } from 'fastmcp'; // Import Tool and TextContent
 
 // Define input schema
 const DeleteTaskParamsSchema = z.object({
-  id: z.string().min(1, { message: 'Task ID must be a non-empty string.' }),
+  id: z.string().min(1, { message: 'Task ID must be a non-empty string.' }).describe('Task ID to delete'),
   cascade: z
     .boolean()
     .optional()

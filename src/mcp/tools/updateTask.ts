@@ -6,7 +6,7 @@ import { UpdateTaskDataSchema, TaskNotFoundError } from '../../types/task';
 
 // Define input schema - requires the ID and the update data
 const UpdateTaskParamsSchema = z.object({
-  id: z.string().min(1, { message: 'Task ID must be a non-empty string.' }),
+  id: z.string().min(1, { message: 'Task ID must be a non-empty string.' }).describe('Task ID to update'),
   updates: UpdateTaskDataSchema.describe('The data to update the task with.'),
   projectRoot: z
     .string()

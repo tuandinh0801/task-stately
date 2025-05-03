@@ -36,7 +36,9 @@ const BatchTaskDefinitionSchema = z.object({
 const AddMultipleTasksParamsSchema = z.object({
   tasks: z
     .array(BatchTaskDefinitionSchema)
-    .min(1, 'At least one task definition is required.'),
+    .min(1, 'At least one task definition is required.').describe(
+      "Array of task definitions to create in a batch."
+    ),
   projectRoot: z
     .string()
     .describe('Absolute path to the project root directory on the client.'),
