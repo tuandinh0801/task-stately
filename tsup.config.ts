@@ -6,7 +6,7 @@ export default defineConfig({
     'src/mcp/server.ts', // Entry point for the MCP server
   ],
   format: ['esm'], // Output ES Module format
-  dts: true, // Generate declaration files (.d.ts)
+  dts: false, // Generate declaration files (.d.ts)
   splitting: false, // Keep code bundled per entry point initially
   sourcemap: true, // Generate sourcemaps for debugging
   clean: true, // Clean output directory before build
